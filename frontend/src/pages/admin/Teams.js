@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Search, Users, Download, FileSpreadsheet, FileText, Mail, MailPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const BACKEND_URL = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com';
 
 export default function TeamsManagement() {
   const [teams, setTeams] = useState([]);
