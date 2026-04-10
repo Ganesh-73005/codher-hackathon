@@ -1,4 +1,4 @@
-const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
+const API_BASE = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com/';
 
 let accessToken = localStorage.getItem('access_token');
 let refreshToken = localStorage.getItem('refresh_token');
