@@ -44,9 +44,9 @@ export default function LoginPage() {
             </div>
             <h1 className="text-4xl font-bold tracking-tight" style={{fontFamily:'Space Grotesk', color:'hsl(262 83% 58%)'}}>CodHER</h1>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{fontFamily:'Space Grotesk'}}>Hackathon Management Platform</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{fontFamily:'Space Grotesk'}}>Hackathon Platform</h2>
           <p className="text-gray-600 text-lg leading-relaxed">
-            Streamline your hackathon from registration to results. Manage teams, mentors, evaluations, and communications — all in one place.
+            A 24hrs Women only Online hackathon designed to elevate the future of innovations.
           </p>
           <div className="mt-10 grid grid-cols-3 gap-6">
             <div className="text-center">
