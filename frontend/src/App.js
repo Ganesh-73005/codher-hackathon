@@ -84,7 +84,6 @@ function App() {
             <Route path="import" element={<ImportData />} />
             <Route path="teams" element={<TeamsManagement />} />
             <Route path="mentors" element={<MentorsManagement />} />
-            <Route path="mapping" element={<Mapping />} />
             <Route path="round-mapping" element={<RoundMapping />} />
             <Route path="evaluations" element={<EvaluationMonitoring />} />
             <Route path="rubrics" element={<Rubrics />} />
