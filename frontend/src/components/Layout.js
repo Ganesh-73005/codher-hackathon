@@ -15,7 +15,6 @@ const adminNav = [
   { label: 'Import Data', icon: Upload, path: '/admin/import' },
   { label: 'Teams', icon: Users, path: '/admin/teams' },
   { label: 'Mentors', icon: UserCheck, path: '/admin/mentors' },
-  { label: 'Mapping', icon: ClipboardList, path: '/admin/mapping' },
   { label: 'Round Mapping', icon: GitBranch, path: '/admin/round-mapping' },
   { label: 'Evaluations', icon: BarChart3, path: '/admin/evaluations' },
   { label: 'Rubrics', icon: GraduationCap, path: '/admin/rubrics' },
