@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { GDrivePDFEmbed, GDriveVideoEmbed, GitHubLinkCard } from '../../components/GDriveEmbed';
 import { toast } from 'sonner';
-import { Save, Loader2, CheckCircle, FileText, Link as LinkIcon, GitBranch, Video, AlertTriangle, Info } from 'lucide-react';
+import { Save, Loader2, CheckCircle, FileText, Link as LinkIcon, GitBranch, Video, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 
 const ROUND_FIELDS = {
   'Round 1': [{ key: 'ppt_link', label: 'PPT / PDF Link (Google Drive)', icon: FileText, placeholder: 'https://drive.google.com/file/d/.../view' }],
@@ -91,6 +91,48 @@ export default function TeamSubmissions() {
   const getDeadline = (roundName) => deadlines.find(d => d.round_name === roundName);
   const fields = ROUND_FIELDS[round] || [];
 
+  // Check if a round is locked due to previous round not submitted
+  const isRoundLocked = (roundName) => {
+    const rounds = ['Round 1', 'Round 2', 'Round 3'];
+    const currentIndex = rounds.indexOf(roundName);
+
+    // Round 1 is never locked
+    if (currentIndex === 0) return { locked: false, reason: '' };
+
+    // Check all previous rounds
+    for (let i = 0; i < currentIndex; i++) {
+      const prevRound = rounds[i];
+      const prevDeadline = getDeadline(prevRound);
+      const prevSubmission = submissions.find(s => s.round_name === prevRound);
+
+      // If previous round has a deadline
+      if (prevDeadline && prevDeadline.submission_deadline) {
+        const deadlineDate = new Date(prevDeadline.submission_deadline);
+        const now = new Date();
+
+        // If deadline passed and no submission, lock current round
+        if (now > deadlineDate && !prevSubmission) {
+          return {
+            locked: true,
+            reason: `${prevRound} deadline passed without submission. Complete ${prevRound} first.`
+          };
+        }
+      }
+    }
+
+    return { locked: false, reason: '' };
+  };
+
+  const currentRoundLock = isRoundLocked(round);
+
+  // Auto-switch to Round 1 if current round is locked
+  React.useEffect(() => {
+    if (currentRoundLock.locked && round !== 'Round 1') {
+      setRound('Round 1');
+      toast.warning(currentRoundLock.reason);
+    }
+  }, [currentRoundLock.locked, round, currentRoundLock.reason]);
+
   return (
     <div>
       <div className="mb-6">
@@ -116,18 +158,53 @@ export default function TeamSubmissions() {
         <CardContent className="pt-6">
           <Tabs value={round} onValueChange={setRound}>
             <TabsList>
-              <TabsTrigger value="Round 1">Round 1</TabsTrigger>
-              <TabsTrigger value="Round 2">Round 2</TabsTrigger>
-              <TabsTrigger value="Round 3">Round 3</TabsTrigger>
+              <TabsTrigger value="Round 1">
+                Round 1
+              </TabsTrigger>
+              <TabsTrigger
+                value="Round 2"
+                disabled={isRoundLocked('Round 2').locked}
+                onClick={(e) => {
+                  if (isRoundLocked('Round 2').locked) {
+                    e.preventDefault();
+                    toast.error(isRoundLocked('Round 2').reason);
+                  }
+                }}
+              >
+                Round 2 {isRoundLocked('Round 2').locked && '🔒'}
+              </TabsTrigger>
+              <TabsTrigger
+                value="Round 3"
+                disabled={isRoundLocked('Round 3').locked}
+                onClick={(e) => {
+                  if (isRoundLocked('Round 3').locked) {
+                    e.preventDefault();
+                    toast.error(isRoundLocked('Round 3').reason);
+                  }
+                }}
+              >
+                Round 3 {isRoundLocked('Round 3').locked && '🔒'}
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
           <div className="mt-6 space-y-4">
+            {/* Round Locked Warning */}
+            {currentRoundLock.locked && (
+              <Alert className="border-orange-200 bg-orange-50">
+                <AlertCircle className="w-4 h-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  <p className="font-medium text-sm">🔒 This round is locked</p>
+                  <p className="text-xs mt-1">{currentRoundLock.reason}</p>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Deadline info */}
             {getDeadline(round) && (
               <div className={`p-3 rounded-lg flex items-center gap-2 ${
-                new Date(getDeadline(round).submission_deadline) < new Date() 
-                  ? 'bg-red-50 border border-red-200' 
+                new Date(getDeadline(round).submission_deadline) < new Date()
+                  ? 'bg-red-50 border border-red-200'
                   : 'bg-muted/50'
               }`}>
                 <FileText className={`w-4 h-4 ${
@@ -160,6 +237,7 @@ export default function TeamSubmissions() {
             {/* Round-specific fields */}
             {fields.map((field) => {
               const Icon = field.icon;
+              const isDisabled = currentRoundLock.locked || (getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date());
               return (
                 <div key={field.key}>
                   <Label className="flex items-center gap-1.5">
@@ -173,6 +251,7 @@ export default function TeamSubmissions() {
                       onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
                       placeholder={field.placeholder}
                       className={`pl-9 ${errors[field.key] ? 'border-destructive' : ''}`}
+                      disabled={isDisabled}
                     />
                   </div>
                   {errors[field.key] && (
@@ -184,17 +263,20 @@ export default function TeamSubmissions() {
               );
             })}
 
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={handleSubmit}
               disabled={
-                submitting || 
+                submitting ||
+                currentRoundLock.locked ||
                 (getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date())
-              } 
-              className="w-full btn-press" 
+              }
+              className="w-full btn-press"
               size="lg"
             >
               {submitting ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+              ) : currentRoundLock.locked ? (
+                <><AlertCircle className="w-4 h-4 mr-2" /> Round Locked</>
               ) : getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date() ? (
                 <><AlertTriangle className="w-4 h-4 mr-2" /> Deadline Passed</>
               ) : (
