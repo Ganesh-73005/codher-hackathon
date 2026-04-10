@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { ScrollArea } from '../../components/ui/scroll-area';
 import { Badge } from '../../components/ui/badge';
-import { Send, MessageCircle, Users, Search, X } from 'lucide-react';
+import { Send, MessageCircle, Users, Search, X, ArrowLeft } from 'lucide-react';
 
 // Helper function to format time ago
 function formatTimeAgo(date) {
@@ -133,10 +133,10 @@ export default function ChatPage({ isAdmin = false }) {
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
+      <div className="grid lg:grid-cols-3 gap-4 h-[calc(100vh-220px)] overflow-hidden">
         {/* Rooms List */}
-        <Card className="border-0 shadow-sm lg:col-span-1">
-          <CardHeader className="pb-3">
+        <Card className={`border-0 shadow-sm lg:col-span-1 flex flex-col overflow-hidden ${activeRoom ? 'hidden lg:flex' : 'flex'}`}>
+          <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="text-sm">Conversations ({rooms.length})</CardTitle>
 
             {/* Search Input */}
@@ -162,8 +162,8 @@ export default function ChatPage({ isAdmin = false }) {
               </div>
             )}
           </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[calc(100vh-340px)]" data-testid="chat-conversation-list">
+          <CardContent className="p-0 flex-1 overflow-hidden">
+            <ScrollArea className="h-full" data-testid="chat-conversation-list">
               {loading ? (
                 <div className="p-4 space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 skeleton-shimmer rounded-lg" />)}</div>
               ) : filteredAndSortedRooms.length === 0 ? (
@@ -215,25 +215,35 @@ export default function ChatPage({ isAdmin = false }) {
         </Card>
 
         {/* Chat Thread */}
-        <Card className="border-0 shadow-sm lg:col-span-2 flex flex-col">
+        <Card className={`border-0 shadow-sm lg:col-span-2 flex flex-col overflow-hidden ${!activeRoom ? 'hidden lg:flex' : 'flex'}`}>
           {activeRoom ? (
             <>
-              <CardHeader className="pb-3 border-b">
+              <CardHeader className="pb-3 border-b flex-shrink-0">
                 <div className="flex items-center gap-3">
+                  {/* Back button for mobile */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveRoom(null)}
+                    className="lg:hidden p-2 h-8 w-8"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                     <Users className="w-4 h-4 text-primary" />
                   </div>
-                  <div>
-                    <CardTitle className="text-sm">{activeRoom.team_name || activeRoom.team_id}</CardTitle>
-                    <p className="text-xs text-muted-foreground">{activeRoom.mentor_email}</p>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-sm truncate">{activeRoom.team_name || activeRoom.team_id}</CardTitle>
+                    <p className="text-xs text-muted-foreground truncate">{activeRoom.mentor_email}</p>
                   </div>
                   {isAdmin && (
-                    <Badge variant="secondary" className="ml-auto" data-testid="chat-join-button">Admin View</Badge>
+                    <Badge variant="secondary" className="hidden sm:inline-flex" data-testid="chat-join-button">Admin</Badge>
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 p-0 flex flex-col">
-                <ScrollArea className="flex-1 p-4" ref={scrollAreaRef} data-testid="chat-thread">
+              <CardContent className="flex-1 p-0 flex flex-col min-h-0">
+                <ScrollArea className="flex-1 p-4 overflow-auto" ref={scrollAreaRef} data-testid="chat-thread">
                   <div className="space-y-3">
                     {messages.map((msg, i) => {
                       const isMine = msg.sender_email === user?.email;
@@ -256,15 +266,16 @@ export default function ChatPage({ isAdmin = false }) {
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
-                <div className="p-3 border-t flex gap-2">
+                <div className="p-3 border-t flex gap-2 flex-shrink-0 bg-background">
                   <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
-                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                     data-testid="chat-message-input"
+                    className="flex-1"
                   />
-                  <Button onClick={sendMessage} size="icon" className="btn-press" data-testid="chat-send-button">
+                  <Button onClick={sendMessage} size="icon" className="btn-press flex-shrink-0" data-testid="chat-send-button">
                     <Send className="w-4 h-4" />
                   </Button>
                 </div>
