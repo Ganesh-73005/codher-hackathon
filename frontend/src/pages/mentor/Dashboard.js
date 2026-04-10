@@ -114,7 +114,7 @@ export default function MentorDashboard() {
                 <p className="text-xs text-muted-foreground">{team.college_name}</p>
                 {team.team_lead_mobile && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <Phone className="w-3 h-3" /> {team.team_lead_mobile}
+                    <Phone className="w-3 h-3" /> +{team.team_lead_mobile}
                   </p>
                 )}
                 <div className="flex gap-2 mt-3">
