@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '../../components/ui/label';
 import { Checkbox } from '../../components/ui/checkbox';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const BACKEND_URL = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com';
 
 export default function MentorsManagement() {
   const [mentors, setMentors] = useState([]);
