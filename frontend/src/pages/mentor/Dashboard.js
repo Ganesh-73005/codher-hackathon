@@ -110,7 +110,7 @@ export default function MentorDashboard() {
                   </div>
                   <Badge variant="secondary">{team.status}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">{team.project_title || 'No project title'}</p>
+                <p className="text-sm text-muted-foreground mt-2">{team.project_domain || 'No project title'}</p>
                 <p className="text-xs text-muted-foreground">{team.college_name}</p>
                 {team.team_lead_mobile && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
