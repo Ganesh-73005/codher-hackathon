@@ -6,7 +6,18 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { ScrollArea } from '../../components/ui/scroll-area';
 import { Badge } from '../../components/ui/badge';
-import { Send, MessageCircle, Users } from 'lucide-react';
+import { Send, MessageCircle, Users, Search, X } from 'lucide-react';
+
+// Helper function to format time ago
+function formatTimeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  return date.toLocaleDateString();
+}
 
 export default function ChatPage({ isAdmin = false }) {
   const { user } = useAuth();
@@ -15,6 +26,7 @@ export default function ChatPage({ isAdmin = false }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
   const scrollAreaRef = useRef(null);
@@ -28,6 +40,34 @@ export default function ChatPage({ isAdmin = false }) {
   }, []);
 
   useEffect(() => { fetchRooms(); }, [fetchRooms]);
+
+  // Filter and sort rooms
+  const filteredAndSortedRooms = React.useMemo(() => {
+    let filtered = rooms;
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = rooms.filter(room =>
+        room.team_name?.toLowerCase().includes(query) ||
+        room.team_id?.toLowerCase().includes(query) ||
+        room.mentor_name?.toLowerCase().includes(query) ||
+        room.mentor_email?.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort by last message timestamp (most recent first)
+    return filtered.sort((a, b) => {
+      const aTime = a.last_message?.created_at || a.created_at || '';
+      const bTime = b.last_message?.created_at || b.created_at || '';
+
+      if (!aTime && !bTime) return 0;
+      if (!aTime) return 1;  // Rooms without messages go to bottom
+      if (!bTime) return -1;
+
+      return new Date(bTime) - new Date(aTime);  // Descending order
+    });
+  }, [rooms, searchQuery]);
 
   const fetchMessages = async (roomId) => {
     try {
@@ -97,38 +137,80 @@ export default function ChatPage({ isAdmin = false }) {
         {/* Rooms List */}
         <Card className="border-0 shadow-sm lg:col-span-1">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Conversations</CardTitle>
+            <CardTitle className="text-sm">Conversations ({rooms.length})</CardTitle>
+
+            {/* Search Input */}
+            {isAdmin && rooms.length > 0 && (
+              <div className="relative mt-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search team or mentor..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-9 h-9"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            )}
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[calc(100vh-340px)]" data-testid="chat-conversation-list">
               {loading ? (
                 <div className="p-4 space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 skeleton-shimmer rounded-lg" />)}</div>
-              ) : rooms.length === 0 ? (
+              ) : filteredAndSortedRooms.length === 0 ? (
                 <div className="text-center py-8 px-4">
                   <MessageCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No conversations yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    {searchQuery ? 'No conversations found' : 'No conversations yet'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-0.5 p-2">
-                  {rooms.map((room) => (
-                    <div
-                      key={room._id}
-                      onClick={() => selectRoom(room)}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${activeRoom?._id === room._id ? 'bg-accent' : 'hover:bg-accent/50'}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium truncate">{room.team_name || room.team_id}</p>
-                        {room.unread_count > 0 && <Badge className="text-xs h-5 min-w-[20px] flex items-center justify-center">{room.unread_count}</Badge>}
+                  {filteredAndSortedRooms.map((room) => {
+                    const lastMsgTime = room.last_message?.created_at;
+                    const timeAgo = lastMsgTime ? formatTimeAgo(new Date(lastMsgTime)) : null;
+
+                    return (
+                      <div
+                        key={room._id}
+                        onClick={() => selectRoom(room)}
+                        className={`p-3 rounded-lg cursor-pointer transition-colors ${activeRoom?._id === room._id ? 'bg-accent' : 'hover:bg-accent/50'}`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium truncate flex-1">{room.team_name || room.team_id}</p>
+                          {timeAgo && (
+                            <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{timeAgo}</span>
+                          )}
+                          {room.unread_count > 0 && <Badge className="text-xs h-5 min-w-[20px] ml-2">{room.unread_count}</Badge>}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{room.mentor_name || room.mentor_email}</p>
+                        {room.last_message && (
+                          <p className="text-xs text-muted-foreground truncate mt-1 opacity-75">
+                            {room.last_message.content}
+                          </p>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{room.mentor_email}</p>
-                      {room.last_message && (
-                        <p className="text-xs text-muted-foreground truncate mt-1">{room.last_message.content}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </ScrollArea>
+
+            {/* Results Counter */}
+            {isAdmin && searchQuery && filteredAndSortedRooms.length > 0 && (
+              <div className="p-2 border-t text-xs text-muted-foreground text-center">
+                Showing {filteredAndSortedRooms.length} of {rooms.length}
+              </div>
+            )}
           </CardContent>
         </Card>
 
