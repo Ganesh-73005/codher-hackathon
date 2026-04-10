@@ -16,6 +16,7 @@ import MentorsManagement from './pages/admin/Mentors';
 import Mapping from './pages/admin/Mapping';
 import RoundMapping from './pages/admin/RoundMapping';
 import EvaluationMonitoring from './pages/admin/EvaluationMonitoring';
+import SubmissionsManagement from './pages/admin/Submissions';
 import EmailComposer from './pages/admin/EmailComposer';
 import ReleaseResults from './pages/admin/ReleaseResults';
 import AdminSettings from './pages/admin/Settings';
@@ -84,8 +85,10 @@ function App() {
             <Route path="import" element={<ImportData />} />
             <Route path="teams" element={<TeamsManagement />} />
             <Route path="mentors" element={<MentorsManagement />} />
+            <Route path="mapping" element={<Mapping />} />
             <Route path="round-mapping" element={<RoundMapping />} />
             <Route path="evaluations" element={<EvaluationMonitoring />} />
+            <Route path="submissions" element={<SubmissionsManagement />} />
             <Route path="rubrics" element={<Rubrics />} />
             <Route path="email" element={<EmailComposer />} />
             <Route path="chat" element={<ChatPage isAdmin={true} />} />
