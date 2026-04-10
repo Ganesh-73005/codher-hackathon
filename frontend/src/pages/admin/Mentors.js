@@ -13,12 +13,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '../../components/ui/label';
 import { Checkbox } from '../../components/ui/checkbox';
 
-const BACKEND_URL = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 export default function MentorsManagement() {
   const [mentors, setMentors] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [roundMappings, setRoundMappings] = useState([]);
   const [capacityDialog, setCapacityDialog] = useState({ open: false, mentor: null, newCapacity: 0 });
   const [addMentorDialog, setAddMentorDialog] = useState(false);
   const [newMentor, setNewMentor] = useState({
@@ -102,8 +103,20 @@ export default function MentorsManagement() {
     }
   };
 
-  const fetchMentors = () => {
-    api(`/api/mentors?search=${search}`).then(d => setMentors(d.mentors)).catch(console.error).finally(() => setLoading(false));
+  const fetchMentors = async () => {
+    try {
+      const [mentorsData, mappingsData] = await Promise.all([
+        api(`/api/mentors?search=${search}`),
+        api('/api/round-mappings')
+      ]);
+
+      setMentors(mentorsData.mentors);
+      setRoundMappings(mappingsData.mappings || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreateMentor = async () => {
@@ -202,8 +215,24 @@ export default function MentorsManagement() {
                 <TableBody>
                   {mentors.map((m) => {
                     const capacity = parseInt(m.max_team_capacity) || 3;
-                    const assigned = m.assigned_teams_count || 0;
+
+                    // Calculate unique teams assigned (from round mappings)
+                    const uniqueTeams = new Set(
+                      roundMappings
+                        .filter(mapping => mapping.mentor_email === m.mentor_email)
+                        .map(mapping => mapping.team_id)
+                    );
+                    const assigned = uniqueTeams.size || m.assigned_teams_count || 0;
                     const pct = Math.min((assigned / capacity) * 100, 100);
+
+                    // Get round-wise breakdown
+                    const roundBreakdown = { 'Round 1': 0, 'Round 2': 0, 'Round 3': 0 };
+                    roundMappings
+                      .filter(mapping => mapping.mentor_email === m.mentor_email)
+                      .forEach(mapping => {
+                        roundBreakdown[mapping.round_name]++;
+                      });
+
                     return (
                       <TableRow key={m.mentor_id} className="table-row-hover">
                         <TableCell className="font-mono text-xs">{m.mentor_id}</TableCell>
@@ -214,7 +243,14 @@ export default function MentorsManagement() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Progress value={pct} className="w-16 h-2" data-testid="admin-mentor-capacity-progress" />
-                            <span className="text-xs tabular-nums">{assigned}/{capacity}</span>
+                            <div className="flex flex-col">
+                              <span className="text-xs tabular-nums font-medium">{assigned}/{capacity}</span>
+                              {assigned > 0 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  R1:{roundBreakdown['Round 1']} R2:{roundBreakdown['Round 2']} R3:{roundBreakdown['Round 3']}
+                                </span>
+                              )}
+                            </div>
                             <Button
                               size="sm"
                               variant="ghost"
