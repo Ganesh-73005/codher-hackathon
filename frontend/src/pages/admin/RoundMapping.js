@@ -3,12 +3,13 @@ import { api } from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from 'sonner';
-import { Plus, Trash2, UserCheck, Users } from 'lucide-react';
+import { Plus, Trash2, UserCheck, Users, Search, X } from 'lucide-react';
 
 export default function RoundMapping() {
   const [mappings, setMappings] = useState([]);
@@ -19,6 +20,7 @@ export default function RoundMapping() {
   const [selectedMentor, setSelectedMentor] = useState('');
   const [selectedTeams, setSelectedTeams] = useState([]);
   const [selectedRounds, setSelectedRounds] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const rounds = ['Round 1', 'Round 2', 'Round 3'];
 
@@ -69,13 +71,25 @@ export default function RoundMapping() {
   };
 
   const handleDeleteMapping = async (mappingId) => {
-    if (!window.confirm('Delete this mapping?')) return;
     try {
       await api(`/api/round-mappings/${mappingId}`, { method: 'DELETE' });
-      toast.success('Mapping deleted');
+      return true;
+    } catch (err) {
+      console.error('Failed to delete mapping:', err);
+      return false;
+    }
+  };
+
+  const handleDeleteAllMappings = async (mappingIds, teamName) => {
+    if (!window.confirm(`Delete all ${mappingIds.length} round mapping(s) for ${teamName}?`)) return;
+
+    try {
+      await Promise.all(mappingIds.map(id => api(`/api/round-mappings/${id}`, { method: 'DELETE' })));
+      toast.success('All mappings deleted');
       fetchData();
     } catch (err) {
-      toast.error('Failed to delete mapping');
+      toast.error('Failed to delete some mappings');
+      fetchData(); // Refresh anyway to show what was deleted
     }
   };
 
@@ -83,7 +97,22 @@ export default function RoundMapping() {
     setSelectedMentor('');
     setSelectedTeams([]);
     setSelectedRounds([]);
+    setSearchQuery('');
   };
+
+  // Filter teams based on search query
+  const filteredTeams = teams.filter(team => {
+    if (!searchQuery) return true;
+
+    const query = searchQuery.toLowerCase();
+    return (
+      team.team_id?.toLowerCase().includes(query) ||
+      team.team_name?.toLowerCase().includes(query) ||
+      team.team_lead_name?.toLowerCase().includes(query) ||
+      team.team_lead_email?.toLowerCase().includes(query) ||
+      team.college_name?.toLowerCase().includes(query)
+    );
+  });
 
   const toggleTeamSelection = (teamId) => {
     setSelectedTeams(prev =>
@@ -97,16 +126,31 @@ export default function RoundMapping() {
     );
   };
 
-  // Group mappings by mentor
+  // Group mappings by mentor and then by team (aggregate rounds)
   const mappingsByMentor = mappings.reduce((acc, mapping) => {
     if (!acc[mapping.mentor_id]) {
       acc[mapping.mentor_id] = {
         mentor_name: mapping.mentor_name,
         mentor_email: mapping.mentor_email,
-        mappings: []
+        teams: {}
       };
     }
-    acc[mapping.mentor_id].mappings.push(mapping);
+
+    // Group by team within mentor
+    if (!acc[mapping.mentor_id].teams[mapping.team_id]) {
+      acc[mapping.mentor_id].teams[mapping.team_id] = {
+        team_id: mapping.team_id,
+        team_name: mapping.team_name,
+        rounds: [],
+        mapping_ids: [],
+        status: mapping.status
+      };
+    }
+
+    // Add round and mapping ID to the team
+    acc[mapping.mentor_id].teams[mapping.team_id].rounds.push(mapping.round_name);
+    acc[mapping.mentor_id].teams[mapping.team_id].mapping_ids.push(mapping._id);
+
     return acc;
   }, {});
 
@@ -149,32 +193,38 @@ export default function RoundMapping() {
                       <TableRow>
                         <TableHead>Team ID</TableHead>
                         <TableHead>Team Name</TableHead>
-                        <TableHead>Round</TableHead>
+                        <TableHead>Assigned Rounds</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.mappings.map((mapping) => (
-                        <TableRow key={mapping._id}>
-                          <TableCell className="font-mono text-xs">{mapping.team_id}</TableCell>
-                          <TableCell>{mapping.team_name}</TableCell>
+                      {Object.values(data.teams).map((team) => (
+                        <TableRow key={team.team_id}>
+                          <TableCell className="font-mono text-xs">{team.team_id}</TableCell>
+                          <TableCell>{team.team_name}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{mapping.round_name}</Badge>
+                            <div className="flex gap-1 flex-wrap">
+                              {team.rounds.sort().map((round, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs">
+                                  {round}
+                                </Badge>
+                              ))}
+                            </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={mapping.status === 'active' ? 'default' : 'secondary'}>
-                              {mapping.status}
+                            <Badge variant={team.status === 'active' ? 'default' : 'secondary'}>
+                              {team.status}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => handleDeleteMapping(mapping._id)}
+                              onClick={() => handleDeleteAllMappings(team.mapping_ids, team.team_name)}
                               className="gap-1"
                             >
-                              <Trash2 className="w-3 h-3" /> Delete
+                              <Trash2 className="w-3 h-3" /> Delete All
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -231,25 +281,68 @@ export default function RoundMapping() {
             {/* Select Teams */}
             <div>
               <label className="text-sm font-medium mb-2 block">Select Teams (Multi-select)</label>
-              <div className="border rounded-lg max-h-64 overflow-y-auto p-3 space-y-2">
-                {teams.map((team) => (
-                  <div key={team.team_id} className="flex items-center gap-2 p-2 hover:bg-muted rounded">
-                    <Checkbox
-                      checked={selectedTeams.includes(team.team_id)}
-                      onCheckedChange={() => toggleTeamSelection(team.team_id)}
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{team.team_name}</p>
-                      <p className="text-xs text-muted-foreground">{team.team_id}</p>
-                    </div>
-                  </div>
-                ))}
+
+              {/* Search Input */}
+              <div className="relative mb-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by team ID, name, lead, email, or college..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-9"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
-              {selectedTeams.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  {selectedTeams.length} team(s) selected
-                </p>
-              )}
+
+              {/* Teams List */}
+              <div className="border rounded-lg max-h-64 overflow-y-auto p-3 space-y-2">
+                {filteredTeams.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {searchQuery ? 'No teams found matching your search' : 'No teams available'}
+                  </p>
+                ) : (
+                  filteredTeams.map((team) => (
+                    <div key={team.team_id} className="flex items-center gap-2 p-2 hover:bg-muted rounded">
+                      <Checkbox
+                        checked={selectedTeams.includes(team.team_id)}
+                        onCheckedChange={() => toggleTeamSelection(team.team_id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{team.team_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {team.team_id} | {team.team_lead_name}
+                        </p>
+                        {searchQuery && team.college_name && (
+                          <p className="text-xs text-muted-foreground truncate">{team.college_name}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Selection Summary */}
+              <div className="flex items-center justify-between mt-2">
+                {selectedTeams.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedTeams.length} team(s) selected
+                  </p>
+                )}
+                {searchQuery && (
+                  <p className="text-xs text-muted-foreground">
+                    Showing {filteredTeams.length} of {teams.length} teams
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>
