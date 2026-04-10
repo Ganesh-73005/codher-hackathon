@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import {
@@ -16,8 +17,8 @@ const adminNav = [
   { label: 'Teams', icon: Users, path: '/admin/teams' },
   { label: 'Mentors', icon: UserCheck, path: '/admin/mentors' },
   { label: 'Round Mapping', icon: GitBranch, path: '/admin/round-mapping' },
-  { label: 'Submissions', icon: FileText, path: '/admin/submissions' },
   { label: 'Evaluations', icon: BarChart3, path: '/admin/evaluations' },
+  { label: 'Submissions', icon: FileText, path: '/admin/submissions' },
   { label: 'Rubrics', icon: GraduationCap, path: '/admin/rubrics' },
   { label: 'Email', icon: Mail, path: '/admin/email' },
   { label: 'Chat Monitor', icon: MessageCircle, path: '/admin/chat' },
@@ -137,12 +138,37 @@ export default function Layout() {
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
+            <SheetContent side="left" className="w-64 p-0 flex flex-col">
               <SidebarContent items={navItems} location={location} collapsed={false} onNavigate={() => setMobileOpen(false)} />
-              <div className="p-3 border-t">
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="w-full justify-start gap-2">
-                  <LogOut className="w-4 h-4" /> Sign Out
-                </Button>
+
+              {/* Account Details & Sign Out */}
+              <div className="mt-auto border-t">
+                {/* Account Info */}
+                <div className="p-3 border-b">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-xs font-semibold text-primary">
+                        {user?.email?.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{user?.username || user?.email?.split('@')[0]}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <Badge variant="secondary" className="text-xs capitalize">
+                      {user?.role}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Sign Out Button */}
+                <div className="p-3">
+                  <Button variant="ghost" size="sm" onClick={handleLogout} className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50">
+                    <LogOut className="w-4 h-4" /> Sign Out
+                  </Button>
+                </div>
               </div>
             </SheetContent>
           </Sheet>
@@ -160,24 +186,6 @@ export default function Layout() {
             <Outlet />
           </div>
         </main>
-      </div>
-
-      {/* Mobile Bottom Nav */}
-      <div className="md:hidden mobile-bottom-nav">
-        {navItems.slice(0, 5).map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs ${isActive ? 'text-primary font-medium' : 'text-muted-foreground'}`}
-            >
-              <Icon className="w-5 h-5" />
-              <span className="truncate max-w-[60px]">{item.label}</span>
-            </Link>
-          );
-        })}
       </div>
     </div>
   );
