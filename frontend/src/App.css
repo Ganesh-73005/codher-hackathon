@@ -1,0 +1,138 @@
+/* CodHER Platform - App Styles */
+
+/* Layout */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  color: hsl(var(--muted-foreground));
+}
+
+.sidebar-nav-item:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.sidebar-nav-item.active {
+  background: hsl(var(--accent));
+  color: hsl(var(--foreground));
+  font-weight: 500;
+}
+
+/* Table styles */
+.table-row-hover:hover {
+  background: hsl(var(--accent) / 0.5);
+  border-left: 2px solid hsl(var(--primary) / 0.3);
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Chat styles */
+.chat-message-bubble {
+  max-width: 75%;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.chat-message-sent {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-bottom-right-radius: 0.25rem;
+  margin-left: auto;
+}
+
+.chat-message-received {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border-bottom-left-radius: 0.25rem;
+}
+
+/* KPI cards */
+.kpi-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.08);
+}
+
+/* Evaluation slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: hsl(var(--border));
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Mobile bottom nav */
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid hsl(var(--border));
+    z-index: 50;
+    padding: 0.5rem;
+    display: flex;
+    justify-content: space-around;
+  }
+}
+
+/* Loading skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--accent)) 50%, hsl(var(--muted)) 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Hero gradient (login page only) */
+.hero-gradient {
+  background: 
+    radial-gradient(900px circle at 10% 0%, hsl(268 80% 70% / 0.18), transparent 55%),
+    radial-gradient(700px circle at 90% 10%, hsl(198 88% 55% / 0.10), transparent 50%);
+}
+
+/* Button press effect */
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+/* Tab indicator animation */
+.tab-indicator {
+  transition: transform 0.2s ease-out, width 0.2s ease-out;
+}
