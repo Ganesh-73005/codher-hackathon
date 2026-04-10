@@ -26,7 +26,7 @@ export default function EvaluationMonitoring() {
 
   const handleExportExcel = async () => {
     try {
-      const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
+      const API_BASE = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com';
       const response = await fetch(`${API_BASE}/api/evaluations/export/excel?round_name=${encodeURIComponent(round)}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       });
@@ -50,7 +50,7 @@ export default function EvaluationMonitoring() {
 
   const handleExportPDF = async () => {
     try {
-      const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
+      const API_BASE = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com';
       const response = await fetch(`${API_BASE}/api/evaluations/export/pdf?round_name=${encodeURIComponent(round)}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       });
