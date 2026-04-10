@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { toast } from 'sonner';
-import { Search, X, FileText, Github, Video, CheckCircle, XCircle, Clock, Presentation } from 'lucide-react';
+import { Search, X, FileText, GitBranch, Video, CheckCircle, XCircle, Clock, Presentation } from 'lucide-react';
 
 export default function SubmissionsPage() {
   const [teams, setTeams] = useState([]);
@@ -328,7 +328,7 @@ export default function SubmissionsPage() {
                                   className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm"
                                   title="View GitHub"
                                 >
-                                  <Github className="w-4 h-4" />
+                                  <GitBranch className="w-4 h-4" />
                                   GitHub
                                 </a>
                               )}
