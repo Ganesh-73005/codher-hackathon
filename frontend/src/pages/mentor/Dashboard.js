@@ -14,11 +14,44 @@ export default function MentorDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api('/api/dashboard/stats').then(d => setStats(d.stats)),
-      api('/api/teams').then(d => setTeams(d.teams)),
-    ]).catch(console.error).finally(() => setLoading(false));
-  }, []);
+    const fetchData = async () => {
+      try {
+        const [statsData, teamsData, roundMappings] = await Promise.all([
+          api('/api/dashboard/stats'),
+          api('/api/teams'),
+          api('/api/round-mappings')
+        ]);
+
+        setStats(statsData.stats);
+        setTeams(teamsData.teams);
+
+        // Calculate round-wise team counts
+        const mentorEmail = user?.email;
+        const roundCounts = { 'Round 1': 0, 'Round 2': 0, 'Round 3': 0 };
+        const uniqueTeams = new Set();
+
+        roundMappings.mappings?.forEach(mapping => {
+          if (mapping.mentor_email === mentorEmail) {
+            roundCounts[mapping.round_name]++;
+            uniqueTeams.add(mapping.team_id);
+          }
+        });
+
+        setStats(prev => ({
+          ...prev,
+          round_assignments: roundCounts,
+          total_unique_teams: uniqueTeams.size
+        }));
+
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user]);
 
   if (loading) return <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-24 skeleton-shimmer rounded-xl" />)}</div>;
 
@@ -38,8 +71,10 @@ export default function MentorDashboard() {
             <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center mb-3">
               <Users className="w-5 h-5 text-purple-600" />
             </div>
-            <p className="text-2xl font-semibold tabular-nums" style={{fontFamily:'Space Grotesk'}}>{stats?.assigned_teams || 0}</p>
-            <p className="text-xs text-muted-foreground">Assigned Teams</p>
+            <p className="text-2xl font-semibold tabular-nums" style={{fontFamily:'Space Grotesk'}}>
+              {stats?.total_unique_teams || stats?.assigned_teams || 0}
+            </p>
+            <p className="text-xs text-muted-foreground">Unique Teams</p>
           </CardContent>
         </Card>
         <Card className="kpi-card border-0 shadow-sm">
@@ -70,25 +105,25 @@ export default function MentorDashboard() {
       </div>
 
       {/* Round-wise Assignments */}
-      {stats?.round_assignments && Object.keys(stats.round_assignments).length > 0 && (
+      {stats?.round_assignments && (
         <div className="mb-8">
           <h2 className="text-lg font-semibold mb-4" style={{fontFamily:'Space Grotesk'}}>Round-wise Team Assignments</h2>
           <div className="grid md:grid-cols-3 gap-4">
             {['Round 1', 'Round 2', 'Round 3'].map(roundName => {
-              const roundTeams = stats.round_assignments[roundName] || [];
-              if (roundTeams.length === 0) return null;
+              const roundCount = stats.round_assignments[roundName] || 0;
               return (
                 <Card key={roundName} className="border-0 shadow-sm">
                   <CardContent className="p-4">
-                    <h3 className="font-semibold mb-3 text-sm" style={{fontFamily:'Space Grotesk'}}>{roundName}</h3>
-                    <div className="space-y-2">
-                      {roundTeams.map((team, idx) => (
-                        <div key={idx} className="text-xs p-2 bg-muted rounded">
-                          <p className="font-medium">{team.team_name}</p>
-                          <p className="text-muted-foreground">{team.team_id}</p>
-                        </div>
-                      ))}
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-sm" style={{fontFamily:'Space Grotesk'}}>{roundName}</h3>
+                      <Badge variant="secondary">{roundCount} teams</Badge>
                     </div>
+                    <p className="text-2xl font-bold tabular-nums" style={{fontFamily:'Space Grotesk'}}>
+                      {roundCount}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {roundCount === 0 ? 'No assignments' : 'Assigned teams'}
+                    </p>
                   </CardContent>
                 </Card>
               );
@@ -110,11 +145,11 @@ export default function MentorDashboard() {
                   </div>
                   <Badge variant="secondary">{team.status}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">{team.project_domain || 'No project title'}</p>
+                <p className="text-sm text-muted-foreground mt-2">{team.project_title || 'No project title'}</p>
                 <p className="text-xs text-muted-foreground">{team.college_name}</p>
                 {team.team_lead_mobile && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <Phone className="w-3 h-3" /> +{team.team_lead_mobile}
+                    <Phone className="w-3 h-3" /> {team.team_lead_mobile}
                   </p>
                 )}
                 <div className="flex gap-2 mt-3">
