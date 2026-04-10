@@ -4,17 +4,41 @@ import { api } from '../../lib/api';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { LayoutDashboard, FileText, Clock, UserCheck, MessageCircle, Phone } from 'lucide-react';
+import { LayoutDashboard, FileText, Clock, UserCheck, MessageCircle, Phone, Users, Mail, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function TeamDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
+  const [teamData, setTeamData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api('/api/dashboard/stats').then(d => setStats(d.stats)).catch(console.error).finally(() => setLoading(false));
-  }, []);
+    const fetchData = async () => {
+      try {
+        const [statsData, teamsData] = await Promise.all([
+          api('/api/dashboard/stats'),
+          api('/api/teams')
+        ]);
+
+        setStats(statsData.stats);
+
+        // Find current team from teams list using user email
+        const currentTeam = teamsData.teams?.find(t =>
+          t.team_lead_email === user?.email ||
+          t.team_id === user?.team_id
+        );
+        setTeamData(currentTeam);
+
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user]);
 
   if (loading) return <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-24 skeleton-shimmer rounded-xl" />)}</div>;
 
@@ -33,30 +57,89 @@ export default function TeamDashboard() {
         <p className="text-muted-foreground mt-1">Welcome, {stats?.team_name || user?.username}</p>
       </div>
 
-      {/* Mentor Info */}
-      {stats?.mentor_email && (
-        <Card className="border-0 shadow-sm mb-6" data-testid="team-mentor-card">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <UserCheck className="w-5 h-5 text-primary" />
+      <div className="grid md:grid-cols-2 gap-4 mb-6">
+        {/* Mentor Info */}
+        {stats?.mentor_email && (
+          <Card className="border-0 shadow-sm" data-testid="team-mentor-card">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <UserCheck className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Your Mentor: {stats.mentor_name || 'Assigned'}</p>
+                  <p className="text-xs text-muted-foreground">{stats.mentor_email} {stats.mentor_expertise ? `| ${stats.mentor_expertise}` : ''}</p>
+                  {stats.mentor_mobile && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <Phone className="w-3 h-3" /> {stats.mentor_mobile}
+                    </p>
+                  )}
+                </div>
+                <Link to="/team/chat">
+                  <Button variant="outline" size="sm"><MessageCircle className="w-4 h-4 mr-1" /> Chat</Button>
+                </Link>
               </div>
-              <div className="flex-1">
-                <p className="font-medium">Your Mentor: {stats.mentor_name || 'Assigned'}</p>
-                <p className="text-xs text-muted-foreground">{stats.mentor_email} {stats.mentor_expertise ? `| ${stats.mentor_expertise}` : ''}</p>
-                {stats.mentor_mobile && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <Phone className="w-3 h-3" /> {stats.mentor_mobile}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Team Members Info */}
+        {teamData && (
+          <Card className="border-0 shadow-sm" data-testid="team-members-card">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <Users className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium mb-2">
+                    Team Members ({1 + (teamData.members?.length || 0)})
                   </p>
-                )}
+
+                  {/* Team Lead */}
+                  <div className="mb-2 pb-2 border-b">
+                    <div className="flex items-start gap-2">
+                      <User className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{teamData.team_lead_name}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                          <Mail className="w-3 h-3 shrink-0" /> {teamData.team_lead_email}
+                        </p>
+                        {teamData.team_lead_mobile && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Phone className="w-3 h-3 shrink-0" /> {teamData.team_lead_mobile}
+                          </p>
+                        )}
+                        <Badge variant="outline" className="text-xs mt-1">Team Lead</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Other Members from array */}
+                  {teamData.members && teamData.members.length > 0 && (
+                    <>
+                      {teamData.members.map((member, idx) => (
+                        <div key={idx} className={`flex items-start gap-2 ${idx < teamData.members.length - 1 ? 'mb-2' : ''}`}>
+                          <User className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm truncate">{member.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Show message if no other members */}
+                  {(!teamData.members || teamData.members.length === 0) && (
+                    <p className="text-xs text-muted-foreground italic">Solo team</p>
+                  )}
+                </div>
               </div>
-              <Link to="/team/chat">
-                <Button variant="outline" size="sm"><MessageCircle className="w-4 h-4 mr-1" /> Chat</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Round Status Cards */}
       <h2 className="text-lg font-semibold mb-4" style={{fontFamily:'Space Grotesk'}}>Round Status</h2>
