@@ -18,12 +18,18 @@ export default function TeamsManagement() {
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [roundMappings, setRoundMappings] = useState([]);
 
   const fetchTeams = async () => {
     try {
-      const data = await api(`/api/teams?search=${search}&status=${statusFilter}`);
-      setTeams(data.teams);
-      setTotal(data.total);
+      const [teamsData, mappingsData] = await Promise.all([
+        api(`/api/teams?search=${search}&status=${statusFilter}&limit=500`),
+        api('/api/round-mappings')
+      ]);
+
+      setTeams(teamsData.teams);
+      setTotal(teamsData.total);
+      setRoundMappings(mappingsData.mappings || []);
     } catch (err) { console.error(err); }
     setLoading(false);
   };
@@ -164,34 +170,64 @@ export default function TeamsManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {teams.map((team) => (
-                    <TableRow key={team.team_id} className="table-row-hover">
-                      <TableCell className="font-mono text-xs">{team.team_id}</TableCell>
-                      <TableCell className="font-medium">{team.team_name}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm">{team.team_lead_name}</p>
-                          <p className="text-xs text-muted-foreground">{team.team_lead_email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs">{team.college_name || '-'}</TableCell>
-                      <TableCell className="text-xs">{team.assigned_mentor_email || <span className="text-amber-500">Unassigned</span>}</TableCell>
-                      <TableCell><Badge className={`text-xs ${getStatusColor(team.round_1_eval_status)}`}>{team.round_1_eval_status}</Badge></TableCell>
-                      <TableCell><Badge className={`text-xs ${getStatusColor(team.round_2_eval_status)}`}>{team.round_2_eval_status}</Badge></TableCell>
-                      <TableCell><Badge className={`text-xs ${getStatusColor(team.round_3_eval_status)}`}>{team.round_3_eval_status}</Badge></TableCell>
-                      <TableCell><Badge variant={team.status === 'Active' ? 'default' : 'secondary'}>{team.status}</Badge></TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleSendCredentials(team.team_id)}
-                          className="gap-1"
-                        >
-                          <Mail className="w-3 h-3" /> Send
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {teams.map((team) => {
+                    // Get all mentors for this team (traditional + round-wise)
+                    const teamMentors = new Set();
+                    if (team.assigned_mentor_email) {
+                      teamMentors.add(team.assigned_mentor_email);
+                    }
+                    roundMappings
+                      .filter(m => m.team_id === team.team_id)
+                      .forEach(m => teamMentors.add(m.mentor_email));
+
+                    const mentorsList = Array.from(teamMentors);
+
+                    return (
+                      <TableRow key={team.team_id} className="table-row-hover">
+                        <TableCell className="font-mono text-xs">{team.team_id}</TableCell>
+                        <TableCell className="font-medium">{team.team_name}</TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="text-sm">{team.team_lead_name}</p>
+                            <p className="text-xs text-muted-foreground">{team.team_lead_email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">{team.college_name || '-'}</TableCell>
+                        <TableCell className="text-xs">
+                          {mentorsList.length > 0 ? (
+                            <div className="flex flex-col gap-0.5">
+                              {mentorsList.map((email, idx) => (
+                                <span key={idx} className="text-xs truncate max-w-[200px]" title={email}>
+                                  {email}
+                                </span>
+                              ))}
+                              {mentorsList.length > 1 && (
+                                <Badge variant="secondary" className="text-[10px] w-fit">
+                                  {mentorsList.length} mentors
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-amber-500">Unassigned</span>
+                          )}
+                        </TableCell>
+                        <TableCell><Badge className={`text-xs ${getStatusColor(team.round_1_eval_status)}`}>{team.round_1_eval_status}</Badge></TableCell>
+                        <TableCell><Badge className={`text-xs ${getStatusColor(team.round_2_eval_status)}`}>{team.round_2_eval_status}</Badge></TableCell>
+                        <TableCell><Badge className={`text-xs ${getStatusColor(team.round_3_eval_status)}`}>{team.round_3_eval_status}</Badge></TableCell>
+                        <TableCell><Badge variant={team.status === 'Active' ? 'default' : 'secondary'}>{team.status}</Badge></TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSendCredentials(team.team_id)}
+                            className="gap-1"
+                          >
+                            <Mail className="w-3 h-3" /> Send
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
