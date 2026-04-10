@@ -31,7 +31,7 @@ export default function Leaderboard() {
 
   const handleExportExcel = async () => {
     try {
-      const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
+      const API_BASE = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com';
       const response = await fetch(`${API_BASE}/api/leaderboard/export/excel`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       });
@@ -55,7 +55,7 @@ export default function Leaderboard() {
 
   const handleExportPDF = async () => {
     try {
-      const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
+      const API_BASE = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com';
       const response = await fetch(`${API_BASE}/api/leaderboard/export/pdf`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       });
