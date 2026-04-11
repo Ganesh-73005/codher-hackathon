@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import {
   LayoutDashboard, Upload, Users, UserCheck, ClipboardList, Mail,
   MessageCircle, Trophy, Settings, LogOut, Menu, ChevronLeft,
-  GraduationCap, Send, BarChart3, FileText, Bell, Award, GitBranch
+  GraduationCap, Send, BarChart3, FileText, Bell, Award, GitBranch, Sparkles
 } from 'lucide-react';
 
 const adminNav = [
@@ -38,6 +38,7 @@ const mentorNav = [
 const teamNav = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/team' },
   { label: 'Submissions', icon: FileText, path: '/team/submissions' },
+  { label: 'Project', icon: Sparkles, path: '/team/project' },
   { label: 'Chat', icon: MessageCircle, path: '/team/chat' },
   { label: 'Results', icon: Trophy, path: '/team/results' },
   { label: 'Rubrics', icon: GraduationCap, path: '/team/rubrics' },
