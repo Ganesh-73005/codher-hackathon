@@ -10,10 +10,10 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { GDrivePDFEmbed, GDriveVideoEmbed, GitHubLinkCard } from '../../components/GDriveEmbed';
 import { toast } from 'sonner';
-import { 
-  Save, Loader2, CheckCircle, FileText, Link as LinkIcon, 
-  GitBranch, Video, AlertTriangle, Info, AlertCircle, 
-  CloudUpload, Lock, CheckCircle2, ChevronRight
+import {
+  Save, Loader2, CheckCircle, FileText, Link as LinkIcon,
+  GitBranch, Video, AlertTriangle, Info, AlertCircle,
+  CloudUpload, Lock, CheckCircle2, ChevronRight, XCircle
 } from 'lucide-react';
 
 const ROUND_FIELDS = {
@@ -36,14 +36,21 @@ export default function TeamSubmissions() {
   const [submissions, setSubmissions] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [deadlines, setDeadlines] = useState([]);
+  const [disqualifications, setDisqualifications] = useState([]);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     api('/api/submissions').then(d => setSubmissions(d.submissions)).catch(console.error);
     api('/api/deadlines').then(d => setDeadlines(d.deadlines)).catch(console.error);
+    api('/api/disqualifications').then(d => setDisqualifications(d.disqualifications || [])).catch(console.error);
   }, []);
 
   const existingSub = submissions.find(s => s.round_name === round);
+
+  // Check if current round is disqualified
+  const isDisqualified = (roundName) => {
+    return disqualifications.some(d => d.round_name === roundName);
+  };
 
   useEffect(() => {
     if (existingSub) {
@@ -222,8 +229,24 @@ export default function TeamSubmissions() {
 
             <CardContent className="p-6">
               <div className="space-y-6">
+                {/* Disqualification Banner */}
+                {isDisqualified(round) && (
+                  <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border-2 border-red-500/30">
+                    <XCircle className="w-6 h-6 text-red-600 mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-bold text-red-900 dark:text-red-300 text-base">Team Disqualified for {round}</p>
+                      <p className="text-sm text-red-800/90 dark:text-red-200/90 mt-1">
+                        {disqualifications.find(d => d.round_name === round)?.reason || 'You have been disqualified from this round'}
+                      </p>
+                      <p className="text-xs text-red-700/80 dark:text-red-300/80 mt-2">
+                        You cannot submit or participate in subsequent rounds. Please contact the admin if you believe this is an error.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Status Banners */}
-                {currentRoundLock.locked && (
+                {!isDisqualified(round) && currentRoundLock.locked && (
                   <div className="flex items-start gap-3 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
                     <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 shrink-0" />
                     <div>
@@ -283,7 +306,7 @@ export default function TeamSubmissions() {
                   {fields.map((field) => {
                     const Icon = field.icon;
                     const isPassed = getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date();
-                    const isDisabled = currentRoundLock.locked || isPassed;
+                    const isDisabled = isDisqualified(round) || currentRoundLock.locked || isPassed;
                     
                     return (
                       <div key={field.key} className="space-y-2 group">
@@ -318,6 +341,7 @@ export default function TeamSubmissions() {
                   onClick={handleSubmit}
                   disabled={
                     submitting ||
+                    isDisqualified(round) ||
                     currentRoundLock.locked ||
                     (getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date())
                   }
