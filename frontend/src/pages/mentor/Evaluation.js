@@ -12,10 +12,10 @@ import { ScrollArea } from '../../components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/ui/accordion';
 import { GDrivePDFEmbed, GDriveVideoEmbed, GitHubLinkCard } from '../../components/GDriveEmbed';
 import { toast } from 'sonner';
-import { 
-  Save, Loader2, CheckCircle, FileText, Eye, Lock, 
-  GraduationCap, FileSearch, User, Award, MessageSquare, 
-  LayoutList, AlertCircle, Sparkles
+import {
+  Save, Loader2, CheckCircle, FileText, Eye, Lock,
+  GraduationCap, FileSearch, User, Award, MessageSquare,
+  LayoutList, AlertCircle, Sparkles, RefreshCw, Ban, RotateCcw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -41,7 +41,11 @@ export default function MentorEvaluation() {
   const [existingEval, setExistingEval] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [roundAssignments, setRoundAssignments] = useState({});
+  const [disqualifications, setDisqualifications] = useState([]);
+  const [disqualifying, setDisqualifying] = useState(false);
+  const [deadlines, setDeadlines] = useState([]);
 
   useEffect(() => {
     api('/api/teams').then(d => {
@@ -52,6 +56,16 @@ export default function MentorEvaluation() {
         if (found) setSelectedTeam(found);
       }
     }).catch(console.error).finally(() => setLoading(false));
+
+    // Fetch disqualifications
+    api('/api/disqualifications').then(d => {
+      setDisqualifications(d.disqualifications || []);
+    }).catch(console.error);
+
+    // Fetch deadlines
+    api('/api/deadlines').then(d => {
+      setDeadlines(d.deadlines || []);
+    }).catch(console.error);
   }, [searchParams]);
 
   useEffect(() => {
@@ -86,12 +100,124 @@ export default function MentorEvaluation() {
           }
         }).catch(console.error);
 
-      api(`/api/submissions?team_id=${selectedTeam.team_id}&round_name=${encodeURIComponent(round)}`)
+      // Fetch ALL submissions for this team (all rounds) to check previous rounds
+      api(`/api/submissions?team_id=${selectedTeam.team_id}`)
         .then(d => setSubmissions(d.submissions)).catch(console.error);
     }
   }, [selectedTeam, round]);
 
   const totalScore = scores.reduce((sum, s) => sum + (parseInt(s.score) || 0), 0);
+
+  // Refresh submissions manually
+  const refreshSubmissions = async () => {
+    if (!selectedTeam) return;
+
+    setRefreshing(true);
+    try {
+      const data = await api(`/api/submissions?team_id=${selectedTeam.team_id}&round_name=${encodeURIComponent(round)}`);
+      setSubmissions(data.submissions);
+      toast.success('Submissions refreshed!');
+    } catch (err) {
+      toast.error('Failed to refresh submissions');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Check if team is disqualified for this round
+  const isTeamDisqualified = (teamId, roundName) => {
+    return disqualifications.some(d => d.team_id === teamId && d.round_name === roundName);
+  };
+
+  // Check if team missed deadline (only if deadline passed)
+  const isMissedDeadline = (roundName) => {
+    const deadline = deadlines.find(d => d.round_name === roundName);
+    if (!deadline || !deadline.submission_deadline) return false;
+
+    const deadlineDate = new Date(deadline.submission_deadline);
+    const now = new Date();
+
+    // Only consider missed if deadline has passed
+    if (now <= deadlineDate) return false;
+
+    // Deadline passed - check submission
+    if (!currentSub) return true; // No submission after deadline
+
+    const submittedDate = new Date(currentSub.submitted_at);
+    return submittedDate > deadlineDate; // Submitted after deadline
+  };
+
+  // Check if previous round was not submitted (blocking logic)
+  const isPreviousRoundNotSubmitted = (roundName) => {
+    const rounds = ['Round 1', 'Round 2', 'Round 3'];
+    const currentIndex = rounds.indexOf(roundName);
+
+    if (currentIndex === 0) return false; // Round 1 has no previous
+
+    const previousRound = rounds[currentIndex - 1];
+
+    // Check if team submitted for previous round
+    const prevSubmission = submissions.find(s => s.round_name === previousRound);
+    return !prevSubmission;
+  };
+
+  // Disqualify team (cascades to subsequent rounds)
+  const handleDisqualify = async () => {
+    if (!selectedTeam) return;
+
+    const reason = prompt('Enter reason for disqualification:');
+    if (!reason) return;
+
+    setDisqualifying(true);
+    try {
+      // Determine which rounds to disqualify
+      const rounds = ['Round 1', 'Round 2', 'Round 3'];
+      const currentRoundIndex = rounds.indexOf(round);
+      const roundsToDisqualify = rounds.slice(currentRoundIndex); // Current + subsequent rounds
+
+      // Disqualify for all subsequent rounds
+      for (const r of roundsToDisqualify) {
+        await api('/api/disqualify', {
+          method: 'POST',
+          body: JSON.stringify({
+            team_id: selectedTeam.team_id,
+            round_name: r,
+            reason: r === round ? reason : `Disqualified in ${round}: ${reason}`
+          })
+        });
+      }
+
+      const data = await api('/api/disqualifications');
+      setDisqualifications(data.disqualifications || []);
+
+      toast.success(`Team disqualified for ${round} and subsequent rounds`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to disqualify team');
+    } finally {
+      setDisqualifying(false);
+    }
+  };
+
+  // Revert disqualification
+  const handleRevertDisqualification = async () => {
+    if (!selectedTeam) return;
+
+    setDisqualifying(true);
+    try {
+      await api(`/api/disqualify?team_id=${selectedTeam.team_id}&round_name=${encodeURIComponent(round)}`, {
+        method: 'DELETE'
+      });
+
+      const data = await api('/api/disqualifications');
+      setDisqualifications(data.disqualifications || []);
+
+      toast.success('Disqualification reverted');
+    } catch (err) {
+      toast.error(err.message || 'Failed to revert disqualification');
+    } finally {
+      setDisqualifying(false);
+    }
+  };
 
   // Check if mentor can evaluate this round for this team
   const canEvaluateRound = (roundName) => {
@@ -129,7 +255,8 @@ export default function MentorEvaluation() {
     }
   };
 
-  const currentSub = submissions[0];
+  // Get submission for current round (since we now fetch all rounds for the team)
+  const currentSub = submissions.find(s => s.round_name === round);
 
   if (loading) return (
     <div className="max-w-7xl mx-auto space-y-8 animate-pulse">
@@ -170,37 +297,77 @@ export default function MentorEvaluation() {
                 <div className="space-y-1.5">
                   {teams.map(team => {
                     const isSelected = selectedTeam?.team_id === team.team_id;
+                    const isCurrentRoundDisqualified = isTeamDisqualified(team.team_id, round);
+
+                    // Check blocking conditions for this team
+                    const checkTeamMissedDeadline = () => {
+                      const deadline = deadlines.find(d => d.round_name === round);
+                      if (!deadline || !deadline.submission_deadline) return false;
+                      const deadlineDate = new Date(deadline.submission_deadline);
+                      const now = new Date();
+                      if (now <= deadlineDate) return false;
+                      const teamSub = submissions.find(s => s.team_id === team.team_id && s.round_name === round);
+                      if (!teamSub) return true;
+                      return new Date(teamSub.submitted_at) > deadlineDate;
+                    };
+
+                    const checkTeamPrevRoundMissing = () => {
+                      const rounds = ['Round 1', 'Round 2', 'Round 3'];
+                      const currentIndex = rounds.indexOf(round);
+                      if (currentIndex === 0) return false;
+                      const previousRound = rounds[currentIndex - 1];
+                      return !submissions.find(s => s.team_id === team.team_id && s.round_name === previousRound);
+                    };
+
+                    const teamMissedDeadline = checkTeamMissedDeadline();
+                    const teamPrevRoundMissing = checkTeamPrevRoundMissing();
+
                     return (
                       <div
                         key={team.team_id}
                         onClick={() => setSelectedTeam(team)}
                         className={`group flex flex-col gap-2 p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-                          isSelected 
-                            ? 'bg-primary/5 border-primary/30 shadow-sm' 
+                          isSelected
+                            ? 'bg-primary/5 border-primary/30 shadow-sm'
                             : 'border-transparent hover:border-border/50 hover:bg-muted/40'
                         }`}
                       >
                         <div>
-                          <p className={`text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-foreground group-hover:text-primary transition-colors'}`}>
-                            {team.team_name}
+                          <p className={`text-sm font-semibold truncate flex items-center gap-1.5 ${isSelected ? 'text-primary' : 'text-foreground group-hover:text-primary transition-colors'}`}>
+                            <span className="truncate">{team.team_name}</span>
+                            {isCurrentRoundDisqualified && (
+                              <Ban className="w-3.5 h-3.5 text-red-500 shrink-0" title="Disqualified for current round" />
+                            )}
+                            {!isCurrentRoundDisqualified && teamPrevRoundMissing && (
+                              <Lock className="w-3.5 h-3.5 text-orange-500 shrink-0" title="Previous round not submitted" />
+                            )}
+                            {!isCurrentRoundDisqualified && !teamPrevRoundMissing && teamMissedDeadline && (
+                              <AlertCircle className="w-3.5 h-3.5 text-orange-500 shrink-0" title="Missed deadline" />
+                            )}
                           </p>
                           <p className="text-xs font-mono text-muted-foreground mt-0.5">{team.team_id}</p>
                         </div>
                         <div className="flex gap-1.5 mt-1">
                           {[1, 2, 3].map(r => {
+                            const roundName = `Round ${r}`;
                             const evalStatus = team[`round_${r}_eval_status`];
                             const isEvaluated = evalStatus === 'evaluated';
+                            const isDisqualifiedRound = isTeamDisqualified(team.team_id, roundName);
+
                             return (
-                              <Badge 
+                              <Badge
                                 key={r}
                                 variant="outline"
                                 className={`text-[10px] h-5 px-1.5 border-0 font-medium ${
-                                  isEvaluated 
-                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' 
+                                  isDisqualifiedRound
+                                    ? 'bg-red-500/10 text-red-700 dark:text-red-400 line-through'
+                                    : isEvaluated
+                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                                     : 'bg-muted text-muted-foreground'
                                 }`}
+                                title={isDisqualifiedRound ? 'Disqualified' : isEvaluated ? 'Evaluated' : 'Pending'}
                               >
-                                R{r}
+                                {isDisqualifiedRound ? '⛔' : ''} R{r}
                               </Badge>
                             );
                           })}
@@ -308,6 +475,77 @@ export default function MentorEvaluation() {
                 </div>
               )}
 
+              {/* Disqualification Status & Actions */}
+              {selectedTeam && isTeamDisqualified(selectedTeam.team_id, round) ? (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border-2 border-red-500/30">
+                  <Ban className="w-6 h-6 text-red-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-bold text-red-900 dark:text-red-300 text-base">Team Disqualified for {round}</p>
+                    <p className="text-sm text-red-800/90 dark:text-red-200/90 mt-1">
+                      {disqualifications.find(d => d.team_id === selectedTeam.team_id && d.round_name === round)?.reason || 'This team has been disqualified'}
+                    </p>
+                    <p className="text-xs text-red-700/80 dark:text-red-300/80 mt-2">
+                      Disqualified teams cannot be evaluated or submit for subsequent rounds.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRevertDisqualification}
+                    disabled={disqualifying}
+                    className="gap-1.5 shrink-0"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    {disqualifying ? 'Reverting...' : 'Revert'}
+                  </Button>
+                </div>
+              ) : canEvaluateRound(round) && (isMissedDeadline(round) || isPreviousRoundNotSubmitted(round)) ? (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                  <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-orange-900 dark:text-orange-300 text-sm">
+                      {isPreviousRoundNotSubmitted(round)
+                        ? 'Previous Round Not Submitted'
+                        : !currentSub
+                        ? 'Deadline Passed - No Submission'
+                        : 'Submitted After Deadline'}
+                    </p>
+                    <p className="text-sm text-orange-800/80 dark:text-orange-200/80 mt-1">
+                      {isPreviousRoundNotSubmitted(round)
+                        ? `This team has not submitted for the previous round. They must submit for all previous rounds before this round can be evaluated.`
+                        : !currentSub
+                        ? 'The deadline has passed and this team has not submitted any work for this round.'
+                        : 'This team submitted after the deadline and cannot be evaluated.'
+                      }
+                    </p>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDisqualify}
+                    disabled={disqualifying}
+                    className="gap-1.5 shrink-0"
+                  >
+                    <Ban className="w-3.5 h-3.5" />
+                    {disqualifying ? 'Disqualifying...' : 'Disqualify'}
+                  </Button>
+                </div>
+              ) : canEvaluateRound(round) && selectedTeam && (
+                <div className="flex items-center justify-end gap-2 p-3 rounded-xl bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Manage team status</p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDisqualify}
+                    disabled={disqualifying}
+                    className="gap-1.5"
+                  >
+                    <Ban className="w-3.5 h-3.5" />
+                    {disqualifying ? 'Disqualifying...' : 'Disqualify Team'}
+                  </Button>
+                </div>
+              )}
+
               {/* Project Details */}
               {(selectedTeam.project_title || selectedTeam.project_description) && (
                 <div className="p-5 rounded-xl bg-gradient-to-br from-primary/5 to-purple-500/5 border border-primary/10">
@@ -345,7 +583,7 @@ export default function MentorEvaluation() {
                 <Accordion type="single" collapsible defaultValue="submissions" className="w-full">
                   <AccordionItem value="submissions" className="border border-border/50 rounded-xl overflow-hidden shadow-sm bg-card/50 backdrop-blur-sm">
                     <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 transition-colors data-[state=open]:border-b border-border/40">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1">
                         <div className="p-1.5 rounded-md bg-primary/10">
                           <Eye className="w-4 h-4 text-primary" />
                         </div>
@@ -357,6 +595,20 @@ export default function MentorEvaluation() {
                         ) : (
                           <Badge variant="secondary" className="text-xs ml-2">Pending Submission</Badge>
                         )}
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!refreshing) refreshSubmissions();
+                          }}
+                          className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            refreshing
+                              ? 'text-muted-foreground cursor-not-allowed'
+                              : 'text-primary hover:bg-accent cursor-pointer'
+                          }`}
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                          <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                        </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-5 pt-5 pb-5">
@@ -391,7 +643,7 @@ export default function MentorEvaluation() {
               )}
 
               {/* Scoring Engine */}
-              {canEvaluateRound(round) && (
+              {canEvaluateRound(round) && !isTeamDisqualified(selectedTeam?.team_id, round) && !isMissedDeadline(round) && !isPreviousRoundNotSubmitted(round) && (
                 <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm relative overflow-hidden">
                   <CardHeader className="pb-4 border-b border-border/40 bg-muted/10">
                     <div className="flex items-center justify-between">
