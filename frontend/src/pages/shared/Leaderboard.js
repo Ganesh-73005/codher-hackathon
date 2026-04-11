@@ -31,7 +31,7 @@ export default function Leaderboard() {
 
   const handleExportExcel = async () => {
     try {
-      const API_BASE = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com';
+      const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
       const response = await fetch(`${API_BASE}/api/leaderboard/export/excel`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       });
@@ -55,7 +55,7 @@ export default function Leaderboard() {
 
   const handleExportPDF = async () => {
     try {
-      const API_BASE = 'https://4dqf2ei3vk.execute-api.ap-southeast-2.amazonaws.com';
+      const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
       const response = await fetch(`${API_BASE}/api/leaderboard/export/pdf`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       });
@@ -119,7 +119,9 @@ export default function Leaderboard() {
             <Trophy className="w-8 h-8 text-primary" />
             Global Leaderboard
           </h1>
-          <p className="text-muted-foreground mt-1">Overall hackathon rankings</p>
+          <p className="text-muted-foreground mt-1">
+            Weighted Score: Round 2 (30%) + Round 3 (70%) • Round 1 excluded
+          </p>
         </div>
         <div className="flex gap-4 items-center">
           <div className="text-center">
@@ -210,7 +212,7 @@ export default function Leaderboard() {
                     <td className="px-4 py-4">
                       <div className="flex justify-center">
                         <Badge className={`text-lg font-bold px-4 py-1 ${getRankBadgeColor(entry.rank)}`}>
-                          {entry.total_score}
+                          {parseFloat(entry.total_score).toFixed(2)}
                         </Badge>
                       </div>
                     </td>
@@ -247,7 +249,7 @@ export default function Leaderboard() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Total Score</p>
-                    <p className="text-3xl font-bold text-primary">{myTeam.total_score}</p>
+                    <p className="text-3xl font-bold text-primary">{parseFloat(myTeam.total_score).toFixed(2)}</p>
                   </div>
                 </div>
               );
