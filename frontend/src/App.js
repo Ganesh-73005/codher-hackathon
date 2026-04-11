@@ -17,6 +17,7 @@ import Mapping from './pages/admin/Mapping';
 import RoundMapping from './pages/admin/RoundMapping';
 import EvaluationMonitoring from './pages/admin/EvaluationMonitoring';
 import SubmissionsManagement from './pages/admin/Submissions';
+import DisqualifyTeams from './pages/admin/Disqualify';
 import EmailComposer from './pages/admin/EmailComposer';
 import ReleaseResults from './pages/admin/ReleaseResults';
 import AdminSettings from './pages/admin/Settings';
@@ -90,6 +91,7 @@ function App() {
             <Route path="round-mapping" element={<RoundMapping />} />
             <Route path="evaluations" element={<EvaluationMonitoring />} />
             <Route path="submissions" element={<SubmissionsManagement />} />
+            <Route path="disqualify" element={<DisqualifyTeams />} />
             <Route path="rubrics" element={<Rubrics />} />
             <Route path="email" element={<EmailComposer />} />
             <Route path="chat" element={<ChatPage isAdmin={true} />} />
