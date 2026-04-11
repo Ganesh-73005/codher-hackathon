@@ -21,6 +21,7 @@ export default function RoundMapping() {
   const [selectedTeams, setSelectedTeams] = useState([]);
   const [selectedRounds, setSelectedRounds] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGroups, setSelectedGroups] = useState([]);
 
   // Filter states
   const [filterRound, setFilterRound] = useState('all');
@@ -102,7 +103,29 @@ export default function RoundMapping() {
     setSelectedMentor('');
     setSelectedTeams([]);
     setSelectedRounds([]);
+    setSelectedGroups([]);
     setSearchQuery('');
+  };
+
+  // Calculate available groups from teams
+  const availableGroups = [...new Set(teams.map(t => t.group_number).filter(Boolean))].sort((a, b) => a - b);
+
+  // Handle group selection - add all teams from selected groups
+  const handleGroupSelection = (groupNumber) => {
+    const isSelected = selectedGroups.includes(groupNumber);
+
+    if (isSelected) {
+      // Deselect group and remove its teams
+      setSelectedGroups(selectedGroups.filter(g => g !== groupNumber));
+      const groupTeamIds = teams.filter(t => t.group_number === groupNumber).map(t => t.team_id);
+      setSelectedTeams(selectedTeams.filter(id => !groupTeamIds.includes(id)));
+    } else {
+      // Select group and add all its teams
+      setSelectedGroups([...selectedGroups, groupNumber]);
+      const groupTeamIds = teams.filter(t => t.group_number === groupNumber).map(t => t.team_id);
+      const newTeams = [...new Set([...selectedTeams, ...groupTeamIds])];
+      setSelectedTeams(newTeams);
+    }
   };
 
   // Filter teams based on search query
@@ -414,6 +437,41 @@ export default function RoundMapping() {
                   </Button>
                 )}
               </div>
+
+              {/* Group Selection */}
+              {availableGroups.length > 0 && (
+                <div className="mb-3 p-3 bg-muted/50 rounded-lg border">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                    Quick Select by Group
+                  </label>
+                  <div className="flex gap-2 flex-wrap">
+                    {availableGroups.map((groupNum) => {
+                      const groupTeams = teams.filter(t => t.group_number === groupNum);
+                      const isSelected = selectedGroups.includes(groupNum);
+
+                      return (
+                        <Button
+                          key={groupNum}
+                          variant={isSelected ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleGroupSelection(groupNum)}
+                          className="gap-1"
+                        >
+                          Group {groupNum}
+                          <Badge variant={isSelected ? "secondary" : "outline"} className="ml-1 text-xs">
+                            {groupTeams.length}
+                          </Badge>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  {selectedGroups.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Selected {selectedGroups.length} group(s) with {selectedTeams.length} teams
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Teams List */}
               <div className="border rounded-lg max-h-64 overflow-y-auto p-3 space-y-2">
