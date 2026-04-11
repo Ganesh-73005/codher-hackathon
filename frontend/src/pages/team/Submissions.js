@@ -91,7 +91,7 @@ export default function TeamSubmissions() {
   const getDeadline = (roundName) => deadlines.find(d => d.round_name === roundName);
   const fields = ROUND_FIELDS[round] || [];
 
-  // Check if a round is locked due to previous round not submitted
+  // Check if a round is locked due to previous round not submitted or deadline not reached
   const isRoundLocked = (roundName) => {
     const rounds = ['Round 1', 'Round 2', 'Round 3'];
     const currentIndex = rounds.indexOf(roundName);
@@ -109,6 +109,14 @@ export default function TeamSubmissions() {
       if (prevDeadline && prevDeadline.submission_deadline) {
         const deadlineDate = new Date(prevDeadline.submission_deadline);
         const now = new Date();
+
+        // NEW: If previous round deadline hasn't passed yet, lock current round
+        if (now < deadlineDate) {
+          return {
+            locked: true,
+            reason: `${prevRound} is still ongoing. Wait for ${prevRound} deadline to pass before accessing ${roundName}.`
+          };
+        }
 
         // If deadline passed and no submission, lock current round
         if (now > deadlineDate && !prevSubmission) {
@@ -218,7 +226,18 @@ export default function TeamSubmissions() {
                       ? 'text-red-700 font-semibold'
                       : ''
                   }`}>
-                    Deadline: <strong>{getDeadline(round).submission_deadline || 'TBD'}</strong>
+                    Deadline: <strong>
+                      {getDeadline(round).submission_deadline
+                        ? new Date(getDeadline(round).submission_deadline).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })
+                        : 'TBD'}
+                    </strong>
                   </span>
                   {new Date(getDeadline(round).submission_deadline) < new Date() && (
                     <p className="text-xs text-red-600 mt-0.5">⚠️ Deadline has passed - submissions are closed</p>
