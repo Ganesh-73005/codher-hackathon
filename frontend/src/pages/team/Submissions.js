@@ -180,12 +180,15 @@ export default function TeamSubmissions() {
             <div className="border-b border-border/40 bg-muted/20 px-4 py-3">
               <Tabs value={round} onValueChange={setRound} className="w-full">
                 <TabsList className="w-full bg-muted/50 p-1">
-                  <TabsTrigger value="Round 1" className="flex-1 data-[state=active]:shadow-sm">
+                  <TabsTrigger
+                    value="Round 1"
+                    className="flex-1 data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 data-[state=active]:ring-2 data-[state=active]:ring-primary/40 data-[state=active]:ring-offset-2 data-[state=active]:ring-offset-background transition-all"
+                  >
                     Round 1
                   </TabsTrigger>
                   <TabsTrigger
                     value="Round 2"
-                    className="flex-1 data-[state=active]:shadow-sm"
+                    className="flex-1 data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 data-[state=active]:ring-2 data-[state=active]:ring-primary/40 data-[state=active]:ring-offset-2 data-[state=active]:ring-offset-background transition-all"
                     disabled={isRoundLocked('Round 2').locked}
                     onClick={(e) => {
                       if (isRoundLocked('Round 2').locked) {
@@ -200,7 +203,7 @@ export default function TeamSubmissions() {
                   </TabsTrigger>
                   <TabsTrigger
                     value="Round 3"
-                    className="flex-1 data-[state=active]:shadow-sm"
+                    className="flex-1 data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 data-[state=active]:ring-2 data-[state=active]:ring-primary/40 data-[state=active]:ring-offset-2 data-[state=active]:ring-offset-background transition-all"
                     disabled={isRoundLocked('Round 3').locked}
                     onClick={(e) => {
                       if (isRoundLocked('Round 3').locked) {
