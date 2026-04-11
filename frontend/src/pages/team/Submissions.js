@@ -10,7 +10,11 @@ import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { GDrivePDFEmbed, GDriveVideoEmbed, GitHubLinkCard } from '../../components/GDriveEmbed';
 import { toast } from 'sonner';
-import { Save, Loader2, CheckCircle, FileText, Link as LinkIcon, GitBranch, Video, AlertTriangle, Info, AlertCircle } from 'lucide-react';
+import { 
+  Save, Loader2, CheckCircle, FileText, Link as LinkIcon, 
+  GitBranch, Video, AlertTriangle, Info, AlertCircle, 
+  CloudUpload, Lock, CheckCircle2, ChevronRight
+} from 'lucide-react';
 
 const ROUND_FIELDS = {
   'Round 1': [{ key: 'ppt_link', label: 'PPT / PDF Link (Google Drive)', icon: FileText, placeholder: 'https://drive.google.com/file/d/.../view' }],
@@ -81,7 +85,7 @@ export default function TeamSubmissions() {
         method: 'POST',
         body: JSON.stringify({ round_name: round, ...formData }),
       });
-      toast.success(`Submission for ${round} saved!`);
+      toast.success(`Submission for ${round} saved successfully!`);
       const d = await api('/api/submissions');
       setSubmissions(d.submissions);
     } catch (err) { toast.error(err.message); }
@@ -91,26 +95,21 @@ export default function TeamSubmissions() {
   const getDeadline = (roundName) => deadlines.find(d => d.round_name === roundName);
   const fields = ROUND_FIELDS[round] || [];
 
-  // Check if a round is locked due to previous round not submitted or deadline not reached
   const isRoundLocked = (roundName) => {
     const rounds = ['Round 1', 'Round 2', 'Round 3'];
     const currentIndex = rounds.indexOf(roundName);
 
-    // Round 1 is never locked
     if (currentIndex === 0) return { locked: false, reason: '' };
 
-    // Check all previous rounds
     for (let i = 0; i < currentIndex; i++) {
       const prevRound = rounds[i];
       const prevDeadline = getDeadline(prevRound);
       const prevSubmission = submissions.find(s => s.round_name === prevRound);
 
-      // If previous round has a deadline
       if (prevDeadline && prevDeadline.submission_deadline) {
         const deadlineDate = new Date(prevDeadline.submission_deadline);
         const now = new Date();
 
-        // NEW: If previous round deadline hasn't passed yet, lock current round
         if (now < deadlineDate) {
           return {
             locked: true,
@@ -118,7 +117,6 @@ export default function TeamSubmissions() {
           };
         }
 
-        // If deadline passed and no submission, lock current round
         if (now > deadlineDate && !prevSubmission) {
           return {
             locked: true,
@@ -133,7 +131,6 @@ export default function TeamSubmissions() {
 
   const currentRoundLock = isRoundLocked(round);
 
-  // Auto-switch to Round 1 if current round is locked
   React.useEffect(() => {
     if (currentRoundLock.locked && round !== 'Round 1') {
       setRound('Round 1');
@@ -142,219 +139,280 @@ export default function TeamSubmissions() {
   }, [currentRoundLock.locked, round, currentRoundLock.reason]);
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-semibold tracking-tight" style={{fontFamily:'Space Grotesk'}}>Submissions</h1>
-        <p className="text-muted-foreground mt-1">Submit your project deliverables per round</p>
+    <div className="max-w-7xl mx-auto pb-10 space-y-8">
+      {/* Header Section */}
+      <div className="border-b border-border/40 pb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <CloudUpload className="w-5 h-5 text-primary" />
+          <span className="text-sm font-medium tracking-wider text-primary uppercase">Deliverables</span>
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent" style={{fontFamily:'Space Grotesk'}}>
+          Submissions
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Upload and manage your project deliverables for each round.
+        </p>
       </div>
 
-      {/* Permission Notes */}
-      <Alert className="mb-6 border-blue-200 bg-blue-50">
-        <Info className="w-4 h-4 text-blue-600" />
-        <AlertDescription className="text-blue-800">
-          <p className="font-medium text-sm">Important Submission Guidelines:</p>
-          <ul className="text-xs mt-1 space-y-1 list-disc list-inside">
-            <li>All PPT/PDF files must be uploaded to <strong>Google Drive</strong> in <strong>.pdf format</strong> only</li>
-            <li>Set Google Drive sharing to <strong>"Anyone with the link can view"</strong></li>
-            <li>For GitHub repositories, ensure the repo has <strong>public visibility</strong></li>
-            <li>Demo videos must be uploaded to <strong>Google Drive</strong> with view access enabled</li>
-          </ul>
-        </AlertDescription>
-      </Alert>
-
-      <Card className="border-0 shadow-sm">
-        <CardContent className="pt-6">
-          <Tabs value={round} onValueChange={setRound}>
-            <TabsList>
-              <TabsTrigger value="Round 1">
-                Round 1
-              </TabsTrigger>
-              <TabsTrigger
-                value="Round 2"
-                disabled={isRoundLocked('Round 2').locked}
-                onClick={(e) => {
-                  if (isRoundLocked('Round 2').locked) {
-                    e.preventDefault();
-                    toast.error(isRoundLocked('Round 2').reason);
-                  }
-                }}
-              >
-                Round 2 {isRoundLocked('Round 2').locked && '🔒'}
-              </TabsTrigger>
-              <TabsTrigger
-                value="Round 3"
-                disabled={isRoundLocked('Round 3').locked}
-                onClick={(e) => {
-                  if (isRoundLocked('Round 3').locked) {
-                    e.preventDefault();
-                    toast.error(isRoundLocked('Round 3').reason);
-                  }
-                }}
-              >
-                Round 3 {isRoundLocked('Round 3').locked && '🔒'}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="mt-6 space-y-4">
-            {/* Round Locked Warning */}
-            {currentRoundLock.locked && (
-              <Alert className="border-orange-200 bg-orange-50">
-                <AlertCircle className="w-4 h-4 text-orange-600" />
-                <AlertDescription className="text-orange-800">
-                  <p className="font-medium text-sm">🔒 This round is locked</p>
-                  <p className="text-xs mt-1">{currentRoundLock.reason}</p>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Deadline info */}
-            {getDeadline(round) && (
-              <div className={`p-3 rounded-lg flex items-center gap-2 ${
-                new Date(getDeadline(round).submission_deadline) < new Date()
-                  ? 'bg-red-50 border border-red-200'
-                  : 'bg-muted/50'
-              }`}>
-                <FileText className={`w-4 h-4 ${
-                  new Date(getDeadline(round).submission_deadline) < new Date()
-                    ? 'text-red-600'
-                    : 'text-muted-foreground'
-                }`} />
-                <div className="flex-1">
-                  <span className={`text-sm ${
-                    new Date(getDeadline(round).submission_deadline) < new Date()
-                      ? 'text-red-700 font-semibold'
-                      : ''
-                  }`}>
-                    Deadline: <strong>
-                      {getDeadline(round).submission_deadline
-                        ? new Date(getDeadline(round).submission_deadline).toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          })
-                        : 'TBD'}
-                    </strong>
-                  </span>
-                  {new Date(getDeadline(round).submission_deadline) < new Date() && (
-                    <p className="text-xs text-red-600 mt-0.5">⚠️ Deadline has passed - submissions are closed</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {existingSub && (
-              <div className="p-3 rounded-lg bg-green-50 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-green-700">Previously submitted on {new Date(existingSub.submitted_at || existingSub.updated_at).toLocaleString()}</span>
-              </div>
-            )}
-
-            {/* Round-specific fields */}
-            {fields.map((field) => {
-              const Icon = field.icon;
-              const isDisabled = currentRoundLock.locked || (getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date());
-              return (
-                <div key={field.key}>
-                  <Label className="flex items-center gap-1.5">
-                    <Icon className="w-4 h-4" />
-                    {field.label}
-                  </Label>
-                  <div className="relative mt-1.5">
-                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      value={formData[field.key]}
-                      onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                      placeholder={field.placeholder}
-                      className={`pl-9 ${errors[field.key] ? 'border-destructive' : ''}`}
-                      disabled={isDisabled}
-                    />
-                  </div>
-                  {errors[field.key] && (
-                    <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" /> {errors[field.key]}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                submitting ||
-                currentRoundLock.locked ||
-                (getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date())
-              }
-              className="w-full btn-press"
-              size="lg"
-            >
-              {submitting ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
-              ) : currentRoundLock.locked ? (
-                <><AlertCircle className="w-4 h-4 mr-2" /> Round Locked</>
-              ) : getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date() ? (
-                <><AlertTriangle className="w-4 h-4 mr-2" /> Deadline Passed</>
-              ) : (
-                <><Save className="w-4 h-4 mr-2" /> Save Submission</>
-              )}
-            </Button>
+      {/* Modern Info Panel */}
+      <div className="relative overflow-hidden rounded-2xl bg-blue-500/5 border border-blue-500/20 p-6">
+        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+        <div className="flex items-start gap-4">
+          <div className="p-2 bg-blue-500/10 rounded-lg shrink-0 mt-0.5">
+            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Preview of submitted content */}
-      {existingSub && (
-        <div className="mt-6 space-y-4">
-          <h2 className="text-lg font-semibold" style={{fontFamily:'Space Grotesk'}}>Your Submission Preview</h2>
-          
-          {(existingSub.ppt_link || existingSub.submission_link) && (
-            <GDrivePDFEmbed url={existingSub.ppt_link || existingSub.submission_link} title={`${round} - PPT / PDF`} />
-          )}
-          
-          {existingSub.github_link && (
-            <GitHubLinkCard url={existingSub.github_link} title={`${round} - GitHub Repository`} />
-          )}
-          
-          {existingSub.video_link && (
-            <GDriveVideoEmbed url={existingSub.video_link} title={`${round} - Demo Video`} />
-          )}
+          <div>
+            <h3 className="text-base font-semibold text-blue-900 dark:text-blue-300 mb-2">Submission Guidelines</h3>
+            <ul className="text-sm text-blue-800/80 dark:text-blue-200/80 space-y-1.5 list-disc list-inside">
+              <li>All PPT/PDF files must be uploaded to <strong className="font-semibold text-blue-900 dark:text-blue-200">Google Drive</strong> in <strong className="font-semibold text-blue-900 dark:text-blue-200">.pdf format</strong> only.</li>
+              <li>Set Google Drive sharing to <strong className="font-semibold text-blue-900 dark:text-blue-200">"Anyone with the link can view"</strong>.</li>
+              <li>For GitHub repositories, ensure the repo has <strong className="font-semibold text-blue-900 dark:text-blue-200">public visibility</strong>.</li>
+              <li>Demo videos must be uploaded to <strong className="font-semibold text-blue-900 dark:text-blue-200">Google Drive</strong> with view access enabled.</li>
+            </ul>
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* All Submissions Overview */}
-      <Card className="border-0 shadow-sm mt-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">All Submissions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {['Round 1', 'Round 2', 'Round 3'].map(r => {
-              const sub = submissions.find(s => s.round_name === r);
-              const fieldCount = (ROUND_FIELDS[r] || []).length;
-              const filledCount = sub ? (ROUND_FIELDS[r] || []).filter(f => sub[f.key]).length : 0;
-              return (
-                <div key={r} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                  <div>
-                    <p className="text-sm font-medium">{r}</p>
-                    {sub && (
-                      <p className="text-xs text-muted-foreground">
-                        {filledCount}/{fieldCount} links submitted
-                      </p>
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Main Submission Form */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden">
+            <div className="border-b border-border/40 bg-muted/20 px-4 py-3">
+              <Tabs value={round} onValueChange={setRound} className="w-full">
+                <TabsList className="w-full bg-muted/50 p-1">
+                  <TabsTrigger value="Round 1" className="flex-1 data-[state=active]:shadow-sm">
+                    Round 1
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="Round 2"
+                    className="flex-1 data-[state=active]:shadow-sm"
+                    disabled={isRoundLocked('Round 2').locked}
+                    onClick={(e) => {
+                      if (isRoundLocked('Round 2').locked) {
+                        e.preventDefault();
+                        toast.error(isRoundLocked('Round 2').reason);
+                      }
+                    }}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      Round 2 {isRoundLocked('Round 2').locked && <Lock className="w-3 h-3 text-muted-foreground" />}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="Round 3"
+                    className="flex-1 data-[state=active]:shadow-sm"
+                    disabled={isRoundLocked('Round 3').locked}
+                    onClick={(e) => {
+                      if (isRoundLocked('Round 3').locked) {
+                        e.preventDefault();
+                        toast.error(isRoundLocked('Round 3').reason);
+                      }
+                    }}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      Round 3 {isRoundLocked('Round 3').locked && <Lock className="w-3 h-3 text-muted-foreground" />}
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {/* Status Banners */}
+                {currentRoundLock.locked && (
+                  <div className="flex items-start gap-3 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                    <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-orange-900 dark:text-orange-300 text-sm">This round is currently locked</p>
+                      <p className="text-sm text-orange-800/80 dark:text-orange-200/80 mt-1">{currentRoundLock.reason}</p>
+                    </div>
+                  </div>
+                )}
+
+                {!currentRoundLock.locked && getDeadline(round) && (
+                  <div className={`flex items-center justify-between p-4 rounded-xl border ${
+                    new Date(getDeadline(round).submission_deadline) < new Date()
+                      ? 'bg-rose-500/5 border-rose-500/20'
+                      : 'bg-muted/30 border-border/50'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${
+                        new Date(getDeadline(round).submission_deadline) < new Date() ? 'bg-rose-500/10' : 'bg-muted'
+                      }`}>
+                        <FileText className={`w-4 h-4 ${
+                          new Date(getDeadline(round).submission_deadline) < new Date() ? 'text-rose-600' : 'text-muted-foreground'
+                        }`} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Submission Deadline</p>
+                        <p className={`text-sm font-semibold ${
+                          new Date(getDeadline(round).submission_deadline) < new Date() ? 'text-rose-600 dark:text-rose-400' : 'text-foreground'
+                        }`}>
+                          {getDeadline(round).submission_deadline
+                            ? new Date(getDeadline(round).submission_deadline).toLocaleString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+                              })
+                            : 'TBD'}
+                        </p>
+                      </div>
+                    </div>
+                    {new Date(getDeadline(round).submission_deadline) < new Date() && (
+                      <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-500/20">Closed</Badge>
                     )}
                   </div>
-                  <Badge className={sub ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
-                    {sub ? 'Submitted' : 'Pending'}
-                  </Badge>
+                )}
+
+                {existingSub && !currentRoundLock.locked && (
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-emerald-900 dark:text-emerald-300 text-sm">Successfully Submitted</p>
+                      <p className="text-xs text-emerald-800/80 dark:text-emerald-200/80 mt-0.5">
+                        Last updated on {new Date(existingSub.submitted_at || existingSub.updated_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Form Fields */}
+                <div className="space-y-5">
+                  {fields.map((field) => {
+                    const Icon = field.icon;
+                    const isPassed = getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date();
+                    const isDisabled = currentRoundLock.locked || isPassed;
+                    
+                    return (
+                      <div key={field.key} className="space-y-2 group">
+                        <Label className="flex items-center gap-2 text-sm font-medium">
+                          <Icon className="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                          {field.label}
+                        </Label>
+                        <div className="relative">
+                          <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+                          <Input
+                            value={formData[field.key]}
+                            onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
+                            placeholder={field.placeholder}
+                            className={`pl-9 bg-background/50 focus-visible:ring-primary/30 transition-all ${
+                              errors[field.key] ? 'border-destructive focus-visible:ring-destructive/30' : 'hover:border-border/80'
+                            }`}
+                            disabled={isDisabled}
+                          />
+                        </div>
+                        {errors[field.key] && (
+                          <p className="text-xs text-destructive flex items-center gap-1.5 animate-in slide-in-from-top-1">
+                            <AlertTriangle className="w-3.5 h-3.5" /> {errors[field.key]}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+
+                {/* Submit CTA */}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={
+                    submitting ||
+                    currentRoundLock.locked ||
+                    (getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date())
+                  }
+                  className="w-full shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 h-12 text-base font-medium mt-4"
+                >
+                  {submitting ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Saving Changes...</>
+                  ) : currentRoundLock.locked ? (
+                    <><Lock className="w-5 h-5 mr-2" /> Round Locked</>
+                  ) : getDeadline(round) && new Date(getDeadline(round).submission_deadline) < new Date() ? (
+                    <><AlertTriangle className="w-5 h-5 mr-2" /> Deadline Passed</>
+                  ) : existingSub ? (
+                    <><Save className="w-5 h-5 mr-2" /> Update Submission</>
+                  ) : (
+                    <><Save className="w-5 h-5 mr-2" /> Submit Deliverables</>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Submissions Overview Tracker */}
+          <div className="pt-4">
+            <h3 className="text-lg font-semibold mb-4" style={{fontFamily:'Space Grotesk'}}>Progress Tracker</h3>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {['Round 1', 'Round 2', 'Round 3'].map((r, index) => {
+                const sub = submissions.find(s => s.round_name === r);
+                const fieldCount = (ROUND_FIELDS[r] || []).length;
+                const filledCount = sub ? (ROUND_FIELDS[r] || []).filter(f => sub[f.key]).length : 0;
+                
+                return (
+                  <Card key={r} className="border border-border/50 bg-card/50 overflow-hidden">
+                    <div className={`h-1 w-full ${sub ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`} />
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="font-semibold text-sm">{r}</span>
+                        {sub ? (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-0 h-5 px-1.5 text-[10px]">Submitted</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-muted text-muted-foreground">Pending</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {sub ? `${filledCount}/${fieldCount} links provided` : 'Awaiting submission'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Live Preview Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-6 space-y-4">
+            <h2 className="text-xl font-semibold tracking-tight mb-2" style={{fontFamily:'Space Grotesk'}}>Live Preview</h2>
+            
+            {!existingSub ? (
+              <div className="border border-dashed border-border/60 rounded-2xl p-8 text-center bg-muted/10 flex flex-col items-center justify-center min-h-[300px]">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <FileText className="w-6 h-6 text-muted-foreground/50" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">No submission yet</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Submit links to preview your content here</p>
+              </div>
+            ) : (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {(existingSub.ppt_link || existingSub.submission_link) && (
+                  <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
+                    <div className="bg-muted/30 px-3 py-2 border-b border-border/50 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-500" />
+                      <span className="text-xs font-medium">Presentation PDF</span>
+                    </div>
+                    <GDrivePDFEmbed url={existingSub.ppt_link || existingSub.submission_link} title={`${round} - PPT / PDF`} />
+                  </div>
+                )}
+                
+                {existingSub.github_link && (
+                  <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
+                    <GitHubLinkCard url={existingSub.github_link} title={`${round} - GitHub Repository`} />
+                  </div>
+                )}
+                
+                {existingSub.video_link && (
+                  <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
+                    <div className="bg-muted/30 px-3 py-2 border-b border-border/50 flex items-center gap-2">
+                      <Video className="w-4 h-4 text-purple-500" />
+                      <span className="text-xs font-medium">Demo Video</span>
+                    </div>
+                    <GDriveVideoEmbed url={existingSub.video_link} title={`${round} - Demo Video`} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
