@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../lib/api';
-import { Card, CardContent } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
-import { Users, ClipboardList, CheckCircle, Clock, Phone } from 'lucide-react';
+import { 
+  Users, CheckCircle2, Clock, Phone, ShieldCheck, 
+  Layers, Briefcase, GraduationCap, Lock, ChevronRight 
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function MentorDashboard() {
@@ -53,77 +56,127 @@ export default function MentorDashboard() {
     fetchData();
   }, [user]);
 
-  if (loading) return <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-24 skeleton-shimmer rounded-xl" />)}</div>;
+  if (loading) return (
+    <div className="max-w-7xl mx-auto space-y-8 animate-pulse">
+      <div className="h-10 w-1/3 bg-muted rounded-lg" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {[1,2,3,4].map(i => <div key={i} className="h-32 bg-muted rounded-xl" />)}
+      </div>
+      <div className="h-40 bg-muted rounded-xl" />
+      <div className="grid md:grid-cols-3 gap-6">
+        {[1,2,3,4,5,6].map(i => <div key={i} className="h-48 bg-muted rounded-xl" />)}
+      </div>
+    </div>
+  );
 
   const total = (stats?.completed_evaluations || 0) + (stats?.pending_evaluations || 0);
   const pct = total > 0 ? ((stats?.completed_evaluations || 0) / total) * 100 : 0;
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-semibold tracking-tight" style={{fontFamily:'Space Grotesk'}}>Mentor Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back, {user?.username}</p>
+    <div className="max-w-7xl mx-auto pb-10 space-y-8">
+      {/* Header Section */}
+      <div className="border-b border-border/40 pb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <ShieldCheck className="w-5 h-5 text-primary" />
+          <span className="text-sm font-medium tracking-wider text-primary uppercase">Mentor Portal</span>
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent" style={{fontFamily:'Space Grotesk'}}>
+          Overview Dashboard
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Welcome back, <span className="font-semibold text-foreground">{user?.username}</span>
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Card className="kpi-card border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center mb-3">
-              <Users className="w-5 h-5 text-purple-600" />
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
             </div>
-            <p className="text-2xl font-semibold tabular-nums" style={{fontFamily:'Space Grotesk'}}>
+            <p className="text-3xl font-bold tabular-nums text-foreground mb-1" style={{fontFamily:'Space Grotesk'}}>
               {stats?.total_unique_teams || stats?.assigned_teams || 0}
             </p>
-            <p className="text-xs text-muted-foreground">Unique Teams</p>
+            <p className="text-sm font-medium text-muted-foreground">Unique Teams</p>
           </CardContent>
         </Card>
-        <Card className="kpi-card border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center mb-3">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
             </div>
-            <p className="text-2xl font-semibold tabular-nums" style={{fontFamily:'Space Grotesk'}}>{stats?.completed_evaluations || 0}</p>
-            <p className="text-xs text-muted-foreground">Completed</p>
+            <p className="text-3xl font-bold tabular-nums text-foreground mb-1" style={{fontFamily:'Space Grotesk'}}>
+              {stats?.completed_evaluations || 0}
+            </p>
+            <p className="text-sm font-medium text-muted-foreground">Evaluated</p>
           </CardContent>
         </Card>
-        <Card className="kpi-card border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center mb-3">
-              <Clock className="w-5 h-5 text-amber-600" />
+
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              </div>
             </div>
-            <p className="text-2xl font-semibold tabular-nums" style={{fontFamily:'Space Grotesk'}}>{stats?.pending_evaluations || 0}</p>
-            <p className="text-xs text-muted-foreground">Pending</p>
+            <p className="text-3xl font-bold tabular-nums text-foreground mb-1" style={{fontFamily:'Space Grotesk'}}>
+              {stats?.pending_evaluations || 0}
+            </p>
+            <p className="text-sm font-medium text-muted-foreground">Pending Action</p>
           </CardContent>
         </Card>
-        <Card className="kpi-card border-0 shadow-sm">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-2">Completion</p>
-            <Progress value={pct} className="h-2 mb-2" />
-            <p className="text-lg font-semibold tabular-nums" style={{fontFamily:'Space Grotesk'}}>{Math.round(pct)}%</p>
+
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm flex flex-col justify-between">
+          <CardContent className="p-6 flex flex-col h-full justify-center">
+            <div className="flex items-end justify-between mb-4">
+              <p className="text-sm font-medium text-muted-foreground">Overall Progress</p>
+              <p className="text-2xl font-bold tabular-nums text-foreground" style={{fontFamily:'Space Grotesk'}}>{Math.round(pct)}%</p>
+            </div>
+            <Progress value={pct} className="h-3 bg-muted/50 rounded-full overflow-hidden">
+              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
+            </Progress>
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              {stats?.completed_evaluations || 0} of {total} total tasks done
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Round-wise Assignments */}
       {stats?.round_assignments && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4" style={{fontFamily:'Space Grotesk'}}>Round-wise Team Assignments</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            {['Round 1', 'Round 2', 'Round 3'].map(roundName => {
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2" style={{fontFamily:'Space Grotesk'}}>
+            <Layers className="w-6 h-6 text-primary" /> Evaluation Pipeline
+          </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {['Round 1', 'Round 2', 'Round 3'].map((roundName, index) => {
               const roundCount = stats.round_assignments[roundName] || 0;
+              const hasAssignments = roundCount > 0;
+              
               return (
-                <Card key={roundName} className="border-0 shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-sm" style={{fontFamily:'Space Grotesk'}}>{roundName}</h3>
-                      <Badge variant="secondary">{roundCount} teams</Badge>
+                <Card key={roundName} className={`border relative overflow-hidden transition-all duration-300 ${
+                  hasAssignments ? 'border-primary/30 bg-primary/5 shadow-sm' : 'border-border/50 bg-card/30'
+                }`}>
+                  {hasAssignments && <div className="absolute top-0 left-0 w-1 h-full bg-primary" />}
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-semibold text-lg" style={{fontFamily:'Space Grotesk'}}>{roundName}</h3>
+                      <Badge variant="outline" className={hasAssignments ? 'bg-primary/10 text-primary border-primary/20' : 'bg-muted text-muted-foreground'}>
+                        Stage {index + 1}
+                      </Badge>
                     </div>
-                    <p className="text-2xl font-bold tabular-nums" style={{fontFamily:'Space Grotesk'}}>
-                      {roundCount}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {roundCount === 0 ? 'No assignments' : 'Assigned teams'}
-                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <p className={`text-4xl font-bold tabular-nums tracking-tight ${hasAssignments ? 'text-foreground' : 'text-muted-foreground/50'}`} style={{fontFamily:'Space Grotesk'}}>
+                        {roundCount}
+                      </p>
+                      <p className="text-sm font-medium text-muted-foreground">Teams</p>
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -132,59 +185,98 @@ export default function MentorDashboard() {
         </div>
       )}
 
-      <h2 className="text-lg font-semibold mb-4" style={{fontFamily:'Space Grotesk'}}>All Assigned Teams</h2>
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="mentor-assigned-teams-list">
-        {teams.map(team => (
-          <Link key={team.team_id} to={`/mentor/evaluations?team=${team.team_id}`}>
-            <Card className="kpi-card border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold">{team.team_name}</p>
-                    <p className="text-xs font-mono text-muted-foreground">{team.team_id}</p>
+      {/* All Assigned Teams */}
+      <div className="space-y-4 pt-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2" style={{fontFamily:'Space Grotesk'}}>
+            <Briefcase className="w-6 h-6 text-primary" /> Your Assigned Teams
+          </h2>
+          <Badge variant="secondary" className="px-3 py-1 font-medium">{teams.length} Total</Badge>
+        </div>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="mentor-assigned-teams-list">
+          {teams.map(team => (
+            <Link key={team.team_id} to={`/mentor/evaluations?team=${team.team_id}`} className="block group">
+              <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-1 transition-all duration-300 h-full flex flex-col relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <CardContent className="p-5 flex-1 flex flex-col">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="min-w-0 pr-2">
+                      <h3 className="font-bold text-lg truncate text-foreground group-hover:text-primary transition-colors">
+                        {team.team_name}
+                      </h3>
+                      <p className="text-xs font-mono text-muted-foreground bg-muted/50 inline-block px-1.5 py-0.5 rounded mt-1">
+                        ID: {team.team_id}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="bg-muted/30 capitalize whitespace-nowrap">
+                      {team.status || 'Active'}
+                    </Badge>
                   </div>
-                  <Badge variant="secondary">{team.status}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">{team.project_title || 'No project title'}</p>
-                <p className="text-xs text-muted-foreground">{team.college_name}</p>
-                {team.team_lead_mobile && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <Phone className="w-3 h-3" /> {team.team_lead_mobile}
-                  </p>
-                )}
-                <div className="flex gap-2 mt-3">
-                  <Badge
-                    className={`text-xs ${
-                      team.round_1_eval_status === 'evaluated' ? 'bg-green-100 text-green-700' :
-                      team.assigned_rounds?.includes('Round 1') ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    R1 {!team.assigned_rounds?.includes('Round 1') && '🔒'}
-                  </Badge>
-                  <Badge
-                    className={`text-xs ${
-                      team.round_2_eval_status === 'evaluated' ? 'bg-green-100 text-green-700' :
-                      team.assigned_rounds?.includes('Round 2') ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    R2 {!team.assigned_rounds?.includes('Round 2') && '🔒'}
-                  </Badge>
-                  <Badge
-                    className={`text-xs ${
-                      team.round_3_eval_status === 'evaluated' ? 'bg-green-100 text-green-700' :
-                      team.assigned_rounds?.includes('Round 3') ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    R3 {!team.assigned_rounds?.includes('Round 3') && '🔒'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+
+                  {/* Details */}
+                  <div className="space-y-2.5 flex-1 mb-5">
+                    <div className="bg-muted/30 p-2.5 rounded-lg border border-border/50">
+                      <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">
+                        {team.project_domain || <span className="italic text-muted-foreground">Project title pending</span>}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{team.college_name}</span>
+                    </div>
+                    
+                    {team.team_lead_mobile && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Phone className="w-3.5 h-3.5 shrink-0" />
+                        <span>{team.team_lead_mobile}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Round Badges Footer */}
+                  <div className="pt-4 border-t border-border/40 flex items-center justify-between">
+                    <div className="flex gap-2">
+                      {['Round 1', 'Round 2', 'Round 3'].map((round, idx) => {
+                        const isAssigned = team.assigned_rounds?.includes(round);
+                        // Map internal status field dynamically based on round
+                        const evalStatusField = `round_${idx + 1}_eval_status`;
+                        const isEvaluated = team[evalStatusField] === 'evaluated';
+
+                        if (isEvaluated) {
+                          return (
+                            <Badge key={round} variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-xs px-2">
+                              R{idx + 1} Done
+                            </Badge>
+                          );
+                        }
+                        
+                        if (isAssigned) {
+                          return (
+                            <Badge key={round} variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 text-xs px-2 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                              R{idx + 1}
+                            </Badge>
+                          );
+                        }
+
+                        return (
+                          <Badge key={round} variant="outline" className="bg-muted/50 text-muted-foreground border-transparent text-xs px-2 flex items-center gap-1 opacity-60">
+                            R{idx + 1} <Lock className="w-2.5 h-2.5" />
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-primary/5 text-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
