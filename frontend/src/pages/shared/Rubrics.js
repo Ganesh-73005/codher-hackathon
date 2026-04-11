@@ -1,8 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { GraduationCap, Trophy, BarChart3 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { 
+  GraduationCap, Trophy, BarChart3, Clock, 
+  Lightbulb, CheckCircle2, Target, Scale, ListChecks
+} from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 // Hardcoded rubrics data from CSV
 export const RUBRICS_DATA = {
@@ -90,10 +93,29 @@ export const RUBRICS_DATA = {
   ]
 };
 
+// Custom modern tooltip for the pie charts
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background/95 backdrop-blur-sm border border-border/50 p-3 rounded-lg shadow-xl">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: payload[0].payload.color }} />
+          <p className="text-sm font-semibold text-foreground">{payload[0].payload.fullName || payload[0].name}</p>
+        </div>
+        <p className="text-xs font-medium text-muted-foreground ml-5">
+          Value: <span className="text-foreground">{payload[0].value}{payload[0].name.includes('%') ? '' : ''}</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function Rubrics() {
   // Prepare data for pie charts
   const weightageData = RUBRICS_DATA.categories.map(cat => ({
     name: cat.name,
+    fullName: cat.name,
     value: cat.weightage,
     color: cat.color
   }));
@@ -121,61 +143,75 @@ export default function Rubrics() {
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
     return (
-      <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="12" fontWeight="bold">
+      <text 
+        x={x} y={y} 
+        fill="white" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central" 
+        fontSize="12" 
+        fontWeight="bold"
+        className="drop-shadow-md"
+      >
         {`${(percent * 100).toFixed(0)}%`}
       </text>
     );
   };
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2" style={{fontFamily:'Space Grotesk'}}>
-          <GraduationCap className="w-8 h-8 text-primary" />
+    <div className="max-w-7xl mx-auto pb-10 space-y-8">
+      {/* Header Section */}
+      <div className="border-b border-border/40 pb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Scale className="w-5 h-5 text-primary" />
+          <span className="text-sm font-medium tracking-wider text-primary uppercase">Deep Dive</span>
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent" style={{fontFamily:'Space Grotesk'}}>
           Evaluation Rubrics
         </h1>
-        <p className="text-muted-foreground mt-1">CodHER Hackathon Finals Judging Criteria</p>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Detailed scoring guidelines and judging criteria for the Hackathon Finals.
+        </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
-        <Card className="border-0 shadow-sm">
+      <div className="grid md:grid-cols-3 gap-6">
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Categories</p>
-                <p className="text-3xl font-bold mt-1">{RUBRICS_DATA.categories.length}</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Total Categories</p>
+                <p className="text-3xl font-bold text-foreground">{RUBRICS_DATA.categories.length}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-purple-600" />
+              <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <BarChart3 className="w-7 h-7 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Maximum Score</p>
-                <p className="text-3xl font-bold mt-1">{RUBRICS_DATA.totalMaxScore}</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Maximum Score</p>
+                <p className="text-3xl font-bold text-foreground">{RUBRICS_DATA.totalMaxScore}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-blue-600" />
+              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Trophy className="w-7 h-7 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm">
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300 group">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Presentation Time</p>
-                <p className="text-3xl font-bold mt-1">8 min</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Presentation Time</p>
+                <p className="text-3xl font-bold text-foreground">8 <span className="text-xl text-muted-foreground font-medium">min</span></p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-green-600" />
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Clock className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
           </CardContent>
@@ -183,14 +219,14 @@ export default function Rubrics() {
       </div>
 
       {/* Pie Charts Section */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
+      <div className="grid md:grid-cols-3 gap-6">
         {/* Chart 1: Category Weightage Distribution */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Category Weightage Distribution</CardTitle>
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-2 border-b border-border/40">
+            <CardTitle className="text-base font-semibold" style={{fontFamily:'Space Grotesk'}}>Weightage Distribution</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+          <CardContent className="pt-4">
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
                   data={weightageData}
@@ -198,24 +234,27 @@ export default function Rubrics() {
                   cy="50%"
                   labelLine={false}
                   label={renderCustomizedLabel}
-                  outerRadius={70}
+                  outerRadius={80}
                   dataKey="value"
+                  stroke="var(--background)"
+                  strokeWidth={2}
+                  className="focus:outline-none"
                 >
                   {weightageData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.color} className="hover:opacity-80 transition-opacity duration-300 cursor-pointer" />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="mt-2 space-y-1">
+            <div className="mt-4 space-y-2">
               {weightageData.slice(0, 3).map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: item.color}}></div>
-                    <span className="truncate">{item.name.substring(0, 20)}</span>
+                <div key={idx} className="flex items-center justify-between text-sm p-1.5 rounded-md hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full shadow-sm" style={{backgroundColor: item.color}} />
+                    <span className="truncate font-medium text-muted-foreground">{item.name.substring(0, 22)}</span>
                   </div>
-                  <span className="font-semibold">{item.value}%</span>
+                  <span className="font-semibold text-foreground">{item.value}%</span>
                 </div>
               ))}
             </div>
@@ -223,12 +262,12 @@ export default function Rubrics() {
         </Card>
 
         {/* Chart 2: Score Distribution */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm">Maximum Scores by Category</CardTitle>
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-2 border-b border-border/40">
+            <CardTitle className="text-base font-semibold" style={{fontFamily:'Space Grotesk'}}>Max Scores by Category</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+          <CardContent className="pt-4">
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
                   data={categoryBreakdown}
@@ -236,29 +275,34 @@ export default function Rubrics() {
                   cy="50%"
                   labelLine={false}
                   label={renderCustomizedLabel}
-                  outerRadius={70}
+                  outerRadius={80}
                   dataKey="value"
+                  stroke="var(--background)"
+                  strokeWidth={2}
+                  className="focus:outline-none"
                 >
                   {categoryBreakdown.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.color} className="hover:opacity-80 transition-opacity duration-300 cursor-pointer" />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="mt-2 text-xs text-center text-muted-foreground">
-              Total: {RUBRICS_DATA.totalMaxScore} points
+            <div className="mt-4 flex items-center justify-center">
+              <Badge variant="secondary" className="bg-muted font-medium py-1">
+                Total Output: {RUBRICS_DATA.totalMaxScore} points
+              </Badge>
             </div>
           </CardContent>
         </Card>
 
         {/* Chart 3: Top Priority Categories */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-sm">High Priority Categories (≥20%)</CardTitle>
+        <Card className="border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-2 border-b border-border/40">
+            <CardTitle className="text-base font-semibold" style={{fontFamily:'Space Grotesk'}}>High Priority (≥20%)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+          <CardContent className="pt-4">
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
                   data={topCategories}
@@ -266,24 +310,27 @@ export default function Rubrics() {
                   cy="50%"
                   labelLine={false}
                   label={renderCustomizedLabel}
-                  outerRadius={70}
+                  outerRadius={80}
                   dataKey="value"
+                  stroke="var(--background)"
+                  strokeWidth={2}
+                  className="focus:outline-none"
                 >
                   {topCategories.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.color} className="hover:opacity-80 transition-opacity duration-300 cursor-pointer" />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="mt-2 space-y-1">
+            <div className="mt-4 space-y-2">
               {topCategories.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: item.color}}></div>
-                    <span>{item.name}</span>
+                <div key={idx} className="flex items-center justify-between text-sm p-1.5 rounded-md hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full shadow-sm" style={{backgroundColor: item.color}} />
+                    <span className="font-medium text-muted-foreground">{item.name}</span>
                   </div>
-                  <span className="font-semibold">{item.value}%</span>
+                  <span className="font-semibold text-foreground">{item.value}%</span>
                 </div>
               ))}
             </div>
@@ -292,52 +339,82 @@ export default function Rubrics() {
       </div>
 
       {/* Detailed Rubrics */}
-      <Card className="border-0 shadow-sm mb-6">
-        <CardHeader>
-          <CardTitle>Detailed Scoring Guidelines</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {RUBRICS_DATA.categories.map((category, idx) => (
-              <div key={idx} className="border-l-4 pl-4" style={{borderColor: category.color}}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold">{category.name}</h3>
-                  <Badge style={{backgroundColor: category.color, color: 'white'}}>
-                    {category.weightage}% ({category.maxScore} points)
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2" style={{fontFamily:'Space Grotesk'}}>
+          <ListChecks className="w-6 h-6 text-primary" />
+          Detailed Scoring Guidelines
+        </h2>
+        <div className="grid lg:grid-cols-2 gap-6">
+          {RUBRICS_DATA.categories.map((category, idx) => (
+            <Card 
+              key={idx} 
+              className="relative overflow-hidden border border-border/50 shadow-sm bg-card/30 hover:bg-card/60 transition-all duration-300"
+            >
+              <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: category.color }} />
+              <CardContent className="p-6 pl-8">
+                <div className="flex items-start justify-between gap-4 mb-5 pb-4 border-b border-border/40">
+                  <h3 className="text-lg font-bold text-foreground leading-tight" style={{fontFamily:'Space Grotesk'}}>
+                    {category.name}
+                  </h3>
+                  <Badge 
+                    variant="outline" 
+                    className="shrink-0 font-bold border-0 shadow-sm" 
+                    style={{backgroundColor: `${category.color}15`, color: category.color}}
+                  >
+                    {category.maxScore} pts
                   </Badge>
                 </div>
+                
                 <div className="space-y-3">
                   {category.guidelines.map((guideline, gidx) => (
-                    <div key={gidx} className="bg-muted/50 p-3 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <Badge variant="outline" className="shrink-0 font-mono">
-                          {guideline.range}
-                        </Badge>
-                        <p className="text-sm text-muted-foreground">{guideline.description}</p>
-                      </div>
+                    <div 
+                      key={gidx} 
+                      className="group flex items-start gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/60 border border-transparent hover:border-border/50 transition-all duration-200"
+                    >
+                      <Badge 
+                        variant="outline" 
+                        className="shrink-0 font-mono text-[11px] h-6 mt-0.5 border"
+                        style={{
+                          borderColor: `${category.color}30`, 
+                          color: category.color,
+                          backgroundColor: `${category.color}05`
+                        }}
+                      >
+                        {guideline.range}
+                      </Badge>
+                      <p className="text-sm text-muted-foreground group-hover:text-foreground/90 transition-colors leading-relaxed">
+                        {guideline.description}
+                      </p>
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Judging Notes Panel */}
+      <Card className="border border-amber-500/20 shadow-sm bg-amber-500/5 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+        <CardHeader className="pb-3 border-b border-amber-500/10">
+          <CardTitle className="text-lg flex items-center gap-2 text-amber-900 dark:text-amber-300" style={{fontFamily:'Space Grotesk'}}>
+            <Lightbulb className="w-5 h-5 text-amber-500" /> Important Notes for Judges
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-5">
+          <div className="grid md:grid-cols-2 gap-4">
+            {RUBRICS_DATA.judgingNotes.map((note, idx) => (
+              <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors">
+                <div className="mt-0.5 shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <span className="text-sm font-medium text-amber-950 dark:text-amber-200/90 leading-relaxed">
+                  {note}
+                </span>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Judging Notes */}
-      <Card className="border-0 shadow-sm bg-amber-50 dark:bg-amber-950">
-        <CardHeader>
-          <CardTitle className="text-amber-900 dark:text-amber-100">Important Notes for Judges</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            {RUBRICS_DATA.judgingNotes.map((note, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100">
-                <span className="font-bold">{idx + 1}.</span>
-                <span>{note}</span>
-              </li>
-            ))}
-          </ul>
         </CardContent>
       </Card>
     </div>
