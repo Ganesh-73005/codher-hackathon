@@ -4,9 +4,10 @@ import { api } from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
-import { 
-  Users, CheckCircle2, Clock, Phone, ShieldCheck, 
-  Layers, Briefcase, GraduationCap, Lock, ChevronRight 
+import {
+  Users, CheckCircle2, Clock, Phone, ShieldCheck,
+  Layers, Briefcase, GraduationCap, Lock, ChevronRight,
+  Ban, AlertCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -14,19 +15,25 @@ export default function MentorDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [teams, setTeams] = useState([]);
+  const [disqualifications, setDisqualifications] = useState([]);
+  const [deadlines, setDeadlines] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsData, teamsData, roundMappings] = await Promise.all([
+        const [statsData, teamsData, roundMappings, disqualData, deadlineData] = await Promise.all([
           api('/api/dashboard/stats'),
           api('/api/teams'),
-          api('/api/round-mappings')
+          api('/api/round-mappings'),
+          api('/api/disqualifications'),
+          api('/api/deadlines')
         ]);
 
         setStats(statsData.stats);
         setTeams(teamsData.teams);
+        setDisqualifications(disqualData.disqualifications || []);
+        setDeadlines(deadlineData.deadlines || []);
 
         // Calculate round-wise team counts
         const mentorEmail = user?.email;
@@ -193,7 +200,49 @@ export default function MentorDashboard() {
           </h2>
           <Badge variant="secondary" className="px-3 py-1 font-medium">{teams.length} Total</Badge>
         </div>
-        
+
+        {/* Legend */}
+        <Card className="bg-muted/30 border-border/50">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              <span className="font-semibold text-muted-foreground">Round Status:</span>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 px-2">
+                  R1 Done
+                </Badge>
+                <span className="text-muted-foreground">Evaluated</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className="bg-red-500/10 text-red-700 border-red-500/20 px-2 gap-1">
+                  <Ban className="w-3 h-3" />
+                  R1
+                </Badge>
+                <span className="text-muted-foreground">Disqualified</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className="bg-orange-500/10 text-orange-700 border-orange-500/20 px-2 gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  R1
+                </Badge>
+                <span className="text-muted-foreground">Missed Deadline</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/20 px-2 gap-1">
+                  <Lock className="w-3 h-3" />
+                  R2
+                </Badge>
+                <span className="text-muted-foreground">Prev Round Missing</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline" className="text-xs px-2">
+                  R1
+                </Badge>
+                <span className="text-muted-foreground">Pending</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="mentor-assigned-teams-list">
           {teams.map(team => (
             <Link key={team.team_id} to={`/mentor/evaluations?team=${team.team_id}`} className="block group">
@@ -231,7 +280,7 @@ export default function MentorDashboard() {
                     {team.team_lead_mobile && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Phone className="w-3.5 h-3.5 shrink-0" />
-                        <span> +{team.team_lead_mobile}</span>
+                        <span>{team.team_lead_mobile}</span>
                       </div>
                     )}
                   </div>
@@ -241,14 +290,54 @@ export default function MentorDashboard() {
                     <div className="flex gap-2">
                       {['Round 1', 'Round 2', 'Round 3'].map((round, idx) => {
                         const isAssigned = team.assigned_rounds?.includes(round);
-                        // Map internal status field dynamically based on round
                         const evalStatusField = `round_${idx + 1}_eval_status`;
                         const isEvaluated = team[evalStatusField] === 'evaluated';
+
+                        // Check blocking conditions
+                        const isDisqualified = disqualifications.some(
+                          d => d.team_id === team.team_id && d.round_name === round
+                        );
+
+                        const deadline = deadlines.find(d => d.round_name === round);
+                        const now = new Date();
+                        const deadlinePassed = deadline && new Date(deadline.submission_deadline) < now;
+                        const hasSubmission = team[`round_${idx + 1}_submitted`];
+                        const missedDeadline = deadlinePassed && !hasSubmission;
+
+                        // Check previous round
+                        const prevRoundMissing = idx > 0 && !team[`round_${idx}_submitted`];
+
+                        if (isDisqualified) {
+                          return (
+                            <Badge key={round} variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20 text-xs px-2 gap-1">
+                              <Ban className="w-3 h-3" />
+                              R{idx + 1}
+                            </Badge>
+                          );
+                        }
 
                         if (isEvaluated) {
                           return (
                             <Badge key={round} variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-xs px-2">
                               R{idx + 1} Done
+                            </Badge>
+                          );
+                        }
+
+                        if (missedDeadline) {
+                          return (
+                            <Badge key={round} variant="outline" className="bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20 text-xs px-2 gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              R{idx + 1}
+                            </Badge>
+                          );
+                        }
+
+                        if (prevRoundMissing) {
+                          return (
+                            <Badge key={round} variant="outline" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-xs px-2 gap-1">
+                              <Lock className="w-3 h-3" />
+                              R{idx + 1}
                             </Badge>
                           );
                         }
