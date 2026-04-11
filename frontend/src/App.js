@@ -29,6 +29,7 @@ import MentorEvaluation from './pages/mentor/Evaluation';
 import TeamDashboard from './pages/team/Dashboard';
 import TeamSubmissions from './pages/team/Submissions';
 import TeamResults from './pages/team/Results';
+import TeamProject from './pages/team/Project';
 import RubricsSimple from './pages/team/RubricsSimple';
 
 // Shared
@@ -110,6 +111,7 @@ function App() {
           <Route path="/team" element={<ProtectedRoute allowedRoles={['team']}><Layout /></ProtectedRoute>}>
             <Route index element={<TeamDashboard />} />
             <Route path="submissions" element={<TeamSubmissions />} />
+            <Route path="project" element={<TeamProject />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="results" element={<TeamResults />} />
             <Route path="rubrics" element={<RubricsSimple />} />
