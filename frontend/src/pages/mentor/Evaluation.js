@@ -308,6 +308,38 @@ export default function MentorEvaluation() {
                 </div>
               )}
 
+              {/* Project Details */}
+              {(selectedTeam.project_title || selectedTeam.project_description) && (
+                <div className="p-5 rounded-xl bg-gradient-to-br from-primary/5 to-purple-500/5 border border-primary/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold text-lg" style={{fontFamily:'Space Grotesk'}}>
+                      Project Details
+                    </h3>
+                  </div>
+                  {selectedTeam.project_title && (
+                    <div className="mb-3">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                        Title
+                      </p>
+                      <p className="text-base font-semibold">
+                        {selectedTeam.project_title}
+                      </p>
+                    </div>
+                  )}
+                  {selectedTeam.project_description && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                        Description
+                      </p>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {selectedTeam.project_description}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Submission Viewer */}
               {canEvaluateRound(round) && (
                 <Accordion type="single" collapsible defaultValue="submissions" className="w-full">
