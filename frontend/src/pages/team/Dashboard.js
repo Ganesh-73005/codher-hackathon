@@ -125,9 +125,16 @@ export default function TeamDashboard() {
             <Sparkles className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium tracking-wider text-primary uppercase">Workspace</span>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent" style={{fontFamily:'Space Grotesk'}}>
-            Team Dashboard
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent" style={{fontFamily:'Space Grotesk'}}>
+              Team Dashboard
+            </h1>
+            {teamData?.group_number && (
+              <Badge variant="secondary" className="px-3 py-1.5 text-sm font-semibold">
+                Group {teamData.group_number}
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground mt-2 text-lg">
             Welcome back, <span className="font-semibold text-foreground">{stats?.team_name || user?.username}</span>
           </p>
