@@ -231,7 +231,7 @@ export default function MentorDashboard() {
                     {team.team_lead_mobile && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Phone className="w-3.5 h-3.5 shrink-0" />
-                        <span>{team.team_lead_mobile}</span>
+                        <span> +{team.team_lead_mobile}</span>
                       </div>
                     )}
                   </div>
