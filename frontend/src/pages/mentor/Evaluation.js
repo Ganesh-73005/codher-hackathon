@@ -281,9 +281,9 @@ export default function MentorEvaluation() {
                           key={r}
                           value={r}
                           disabled={isLocked}
-                          className={`flex-1 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg transition-all ${
+                          className={`flex-1 py-2.5 rounded-lg transition-all ${
                             isLocked ? 'opacity-50' : ''
-                          }`}
+                          } data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 data-[state=active]:ring-2 data-[state=active]:ring-primary/40 data-[state=active]:ring-offset-2 data-[state=active]:ring-offset-background`}
                         >
                           <span className="flex items-center justify-center gap-2 font-medium">
                             {r}
