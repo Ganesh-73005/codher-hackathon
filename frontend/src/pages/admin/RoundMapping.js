@@ -22,6 +22,11 @@ export default function RoundMapping() {
   const [selectedRounds, setSelectedRounds] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Filter states
+  const [filterRound, setFilterRound] = useState('all');
+  const [filterMentor, setFilterMentor] = useState('all');
+  const [tableSearchQuery, setTableSearchQuery] = useState('');
+
   const rounds = ['Round 1', 'Round 2', 'Round 3'];
 
   useEffect(() => {
@@ -126,8 +131,34 @@ export default function RoundMapping() {
     );
   };
 
+  // Filter and search mappings
+  const filteredMappings = mappings.filter(mapping => {
+    // Round filter
+    if (filterRound !== 'all' && mapping.round_name !== filterRound) {
+      return false;
+    }
+
+    // Mentor filter
+    if (filterMentor !== 'all' && mapping.mentor_email !== filterMentor) {
+      return false;
+    }
+
+    // Search query
+    if (tableSearchQuery) {
+      const query = tableSearchQuery.toLowerCase();
+      return (
+        mapping.team_name?.toLowerCase().includes(query) ||
+        mapping.team_id?.toLowerCase().includes(query) ||
+        mapping.mentor_name?.toLowerCase().includes(query) ||
+        mapping.mentor_email?.toLowerCase().includes(query)
+      );
+    }
+
+    return true;
+  });
+
   // Group mappings by mentor and then by team (aggregate rounds)
-  const mappingsByMentor = mappings.reduce((acc, mapping) => {
+  const mappingsByMentor = filteredMappings.reduce((acc, mapping) => {
     if (!acc[mapping.mentor_id]) {
       acc[mapping.mentor_id] = {
         mentor_name: mapping.mentor_name,
@@ -172,9 +203,90 @@ export default function RoundMapping() {
         </Button>
       </div>
 
+      {/* Filters and Search */}
+      <Card className="border-0 shadow-sm mb-6">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by team, mentor name, or email..."
+                value={tableSearchQuery}
+                onChange={(e) => setTableSearchQuery(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {tableSearchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTableSearchQuery('')}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* Round Filter */}
+            <Select value={filterRound} onValueChange={setFilterRound}>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by Round" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Rounds</SelectItem>
+                <SelectItem value="Round 1">Round 1</SelectItem>
+                <SelectItem value="Round 2">Round 2</SelectItem>
+                <SelectItem value="Round 3">Round 3</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Mentor Filter */}
+            <Select value={filterMentor} onValueChange={setFilterMentor}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Filter by Mentor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Mentors</SelectItem>
+                {mentors.map(mentor => (
+                  <SelectItem key={mentor.mentor_email} value={mentor.mentor_email}>
+                    {mentor.mentor_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Clear Filters Button */}
+            {(filterRound !== 'all' || filterMentor !== 'all' || tableSearchQuery) && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFilterRound('all');
+                  setFilterMentor('all');
+                  setTableSearchQuery('');
+                }}
+                className="w-full md:w-auto"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+
+          {/* Results count */}
+          <div className="mt-4 text-sm text-muted-foreground">
+            Showing {filteredMappings.length} of {mappings.length} mappings
+            {(filterRound !== 'all' || filterMentor !== 'all' || tableSearchQuery) && (
+              <span className="ml-2 text-primary">
+                (Filtered)
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="border-0 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">Current Mappings ({mappings.length})</CardTitle>
+          <CardTitle className="text-lg">Current Mappings ({filteredMappings.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {Object.keys(mappingsByMentor).length === 0 ? (
